@@ -48,8 +48,21 @@ BASE_CHANNELS = 64
 CHANNEL_MULTS = (1, 2, 4, 8)
 TIMESTEPS = 1000
 
-# Model checkpoint path
+# Model checkpoint path (prefers models/ but falls back to training_results/)
 MODEL_PATH = 'models/ddpm_african_fabrics.pt'
+
+def find_model_checkpoint():
+    """Find the best available model checkpoint (EMA weights preferred)."""
+    from pathlib import Path
+    # First choice: consolidated model file
+    if os.path.exists(MODEL_PATH):
+        return MODEL_PATH
+    # Fallback: latest Trainer checkpoint (contains EMA weights)
+    checkpoints = sorted(Path('training_results').glob('model-*.pt'))
+    if checkpoints:
+        print(f"Using Trainer checkpoint: {checkpoints[-1]}")
+        return str(checkpoints[-1])
+    return MODEL_PATH  # Will trigger "not found" warning in load_model
 
 # Generation settings (NUM_SAMPLES set dynamically based on device)
 SAMPLING_STEPS = 250     # Reduced steps using DDIM (faster)
@@ -150,9 +163,10 @@ def generate_samples(diffusion, num_samples=16, seed=None, device='cpu'):
     with torch.no_grad():
         samples = diffusion.sample(batch_size=num_samples)
 
-    # Convert to numpy and denormalize
+    # Convert to numpy
+    # Note: diffusion.sample() already returns [0, 1] (auto_normalize=True),
+    # so we only need clamp as a safety net — no manual denormalization needed.
     samples = samples.cpu()
-    samples = (samples + 1) / 2  # [-1, 1] -> [0, 1]
     samples = samples.clamp(0, 1)
     samples = samples.numpy()
 
@@ -213,8 +227,9 @@ def main():
     # Returns device and recommended sample count (GPU: 16, CPU: 4)
     device, num_samples = get_device_with_confirmation(task_type="generation")
 
-    # Load model
-    diffusion = load_model(MODEL_PATH, device)
+    # Load model (auto-detects best available checkpoint)
+    model_path = find_model_checkpoint()
+    diffusion = load_model(model_path, device)
 
     # Generate samples
     samples = generate_samples(
@@ -242,28 +257,6 @@ def main():
 
     # Also save individual samples
     save_individual_samples(samples)
-
-    # Print reflection questions
-    print("\n" + "=" * 60)
-    print("Reflection Questions")
-    print("=" * 60)
-    print("""
-1. How do these DDPM-generated patterns compare to the DCGAN output
-   from Module 12.1.2? Do you notice differences in:
-   - Detail and sharpness?
-   - Color consistency?
-   - Pattern coherence?
-
-2. The diffusion model uses 1000 timesteps to gradually add noise
-   during training. Why might this gradual approach produce more
-   stable training than GANs?
-
-3. We used DDIM with 250 sampling steps instead of 1000. How does
-   this affect the generation quality vs speed trade-off?
-
-4. Examine the generated patterns carefully. Do you see any
-   artifacts or repetitive elements? What might cause these?
-    """)
 
 
 if __name__ == '__main__':

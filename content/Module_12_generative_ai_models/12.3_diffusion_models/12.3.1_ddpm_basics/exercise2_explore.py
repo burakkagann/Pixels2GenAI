@@ -47,20 +47,40 @@ except ImportError:
 
 
 # =============================================================================
-# Configuration
+# CONFIG -- Change these values for Exercise 2 goals (see README for details)
 # =============================================================================
 
-# Model parameters (must match training)
+# Goal 1: DDIM sampling speed (try 50, 250, 1000)
+SAMPLING_STEPS = 250
+
+# Goal 2: Forward diffusion timesteps to visualize (add early values like 25, 50)
+TIMESTEPS_TO_SHOW = [0, 100, 250, 500, 750, 999]
+
+# Goal 3: Random seed controls pattern identity (try 7, 42, 123, 999)
+RANDOM_SEED = 42
+
+# Goal 4: Denoising capture points (add values like 900, 700, 500, 300)
+CAPTURE_TIMESTEPS = [999, 800, 600, 400, 200, 100, 50, 0]
+
+# =============================================================================
+# Model parameters (do not change -- must match training)
+# =============================================================================
 IMAGE_SIZE = 64
 BASE_CHANNELS = 64
 CHANNEL_MULTS = (1, 2, 4, 8)
 TIMESTEPS = 1000
-
-# Model checkpoint path
 MODEL_PATH = 'models/ddpm_african_fabrics.pt'
 
-# Exploration settings
-RANDOM_SEED = 42
+def find_model_checkpoint():
+    """Find the best available model checkpoint (EMA weights preferred)."""
+    from pathlib import Path
+    if os.path.exists(MODEL_PATH):
+        return MODEL_PATH
+    checkpoints = sorted(Path('training_results').glob('model-*.pt'))
+    if checkpoints:
+        print(f"Using Trainer checkpoint: {checkpoints[-1]}")
+        return str(checkpoints[-1])
+    return MODEL_PATH
 
 
 # =============================================================================
@@ -143,8 +163,9 @@ def compare_sampling_steps(device='cpu'):
             objective='pred_noise'
         )
 
-        if os.path.exists(MODEL_PATH):
-            checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
+        model_path = find_model_checkpoint()
+        if os.path.exists(model_path):
+            checkpoint = torch.load(model_path, map_location=device, weights_only=False)
             if 'ema' in checkpoint:
                 ema_state = checkpoint['ema']
                 state_dict = {k.replace('ema_model.', ''): v
@@ -161,8 +182,8 @@ def compare_sampling_steps(device='cpu'):
             sample = diffusion.sample(batch_size=1)
 
         # Convert to numpy
+        # diffusion.sample() already returns [0, 1] (auto_normalize=True)
         sample = sample.cpu()
-        sample = (sample + 1) / 2
         sample = sample.clamp(0, 1)[0].permute(1, 2, 0).numpy()
 
         results.append((steps, sample))
@@ -203,7 +224,8 @@ def visualize_denoising_process(device='cpu'):
     print("=" * 60)
 
     # Load model
-    diffusion = load_model(MODEL_PATH, sampling_steps=1000, device=device)
+    model_path = find_model_checkpoint()
+    diffusion = load_model(model_path, sampling_steps=1000, device=device)
 
     torch.manual_seed(RANDOM_SEED)
 
@@ -213,8 +235,8 @@ def visualize_denoising_process(device='cpu'):
     # Start from pure noise
     x = torch.randn(1, 3, IMAGE_SIZE, IMAGE_SIZE, device=device)
 
-    # Capture images at specific timesteps
-    capture_timesteps = [999, 800, 600, 400, 200, 100, 50, 0]
+    # Capture images at specific timesteps (configured in CONFIG section)
+    capture_timesteps = CAPTURE_TIMESTEPS
     captured_images = []
 
     # Get the model's internal step sequence
@@ -263,10 +285,10 @@ def visualize_denoising_process(device='cpu'):
 
     plt.suptitle('Reverse Diffusion: From Noise to Image', fontsize=12)
     plt.tight_layout()
-    plt.savefig('exercise2_denoising_steps.png', dpi=150, bbox_inches='tight')
+    plt.savefig('reverse_diffusion_demo.png', dpi=150, bbox_inches='tight')
     plt.close()
 
-    print("Saved denoising steps to 'exercise2_denoising_steps.png'")
+    print("Saved denoising steps to 'reverse_diffusion_demo.png'")
 
     # Create animated GIF if imageio is available
     if IMAGEIO_AVAILABLE and len(captured_images) > 0:
@@ -317,8 +339,8 @@ def visualize_forward_diffusion(device='cpu'):
     model = Unet(dim=BASE_CHANNELS, dim_mults=CHANNEL_MULTS, flash_attn=False, channels=3)
     diffusion = GaussianDiffusion(model, image_size=IMAGE_SIZE, timesteps=TIMESTEPS)
 
-    # Visualize at different timesteps
-    timesteps = [0, 100, 250, 500, 750, 999]
+    # Visualize at different timesteps (configured in CONFIG section)
+    timesteps = TIMESTEPS_TO_SHOW
     noisy_images = []
 
     for t in timesteps:
@@ -364,7 +386,16 @@ def visualize_forward_diffusion(device='cpu'):
 # =============================================================================
 
 def main():
-    """Run all explorations."""
+    """Run explorations (all by default, or a single goal with --goal N)."""
+    import argparse
+    parser = argparse.ArgumentParser(
+        description='Explore DDPM diffusion parameters')
+    parser.add_argument(
+        '--goal', type=int, choices=[1, 2, 3, 4], default=None,
+        help='Run a single goal (1=sampling steps, 2=forward diffusion, '
+             '3=seed identity, 4=denoising detail). Omit to run all.')
+    args = parser.parse_args()
+
     print("=" * 60)
     print("DDPM Parameter Exploration")
     print("=" * 60)
@@ -372,38 +403,38 @@ def main():
     # Device detection with user confirmation
     device, _ = get_device_with_confirmation(task_type="exploration")
 
-    # Run explorations
-    print("\n" + "~" * 60)
-    visualize_forward_diffusion(device)
+    run_all = args.goal is None
 
-    print("\n" + "~" * 60)
-    compare_sampling_steps(device)
+    # Goal 1 & 3 both use compare_sampling_steps (SAMPLING_STEPS and RANDOM_SEED)
+    if run_all or args.goal in (1, 3):
+        print("\n" + "~" * 60)
+        compare_sampling_steps(device)
 
-    print("\n" + "~" * 60)
-    visualize_denoising_process(device)
+    # Goal 2 uses visualize_forward_diffusion (TIMESTEPS_TO_SHOW)
+    if run_all or args.goal == 2:
+        print("\n" + "~" * 60)
+        visualize_forward_diffusion(device)
+
+    # Goal 4 uses visualize_denoising_process (CAPTURE_TIMESTEPS)
+    if run_all or args.goal == 4:
+        print("\n" + "~" * 60)
+        visualize_denoising_process(device)
 
     # Summary
     print("\n" + "=" * 60)
-    print("Exploration Summary")
+    print("Exploration Complete")
     print("=" * 60)
-    print("""
+    if run_all:
+        print("""
 Generated files:
 - forward_diffusion_demo.png: How noise is added during training
 - exercise2_sampling_comparison.png: Quality vs speed trade-off
-- exercise2_denoising_steps.png: Step-by-step reverse process
+- reverse_diffusion_demo.png: Step-by-step reverse process
 - exercise2_denoising.gif: Animated denoising (if imageio installed)
-
-Key insights:
-1. Forward diffusion gradually corrupts images to pure noise
-2. The model learns to reverse this corruption step by step
-3. More sampling steps = better quality but slower generation
-4. DDIM allows quality generation with fewer steps (250 vs 1000)
-
-Try modifying:
-- RANDOM_SEED: See different generated patterns
-- step_counts in compare_sampling_steps(): Test other step values
-- capture_timesteps in visualize_denoising_process(): Capture more frames
-    """)
+        """)
+    print("Tip: use --goal N to run a single exploration faster.")
+    print("See the README for Goals 1-4: change values in the CONFIG section")
+    print("at the top of this script, then re-run to observe the effects.")
 
 
 if __name__ == '__main__':

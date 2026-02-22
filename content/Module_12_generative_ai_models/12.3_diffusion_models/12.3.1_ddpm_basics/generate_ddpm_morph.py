@@ -11,7 +11,7 @@ Usage:
     python generate_ddpm_morph.py
 
 Requirements:
-    - Trained model checkpoint (training_results/model-10.pt)
+    - Trained model checkpoint (models/ddpm_african_fabrics.pt)
     - denoising-diffusion-pytorch library
     - imageio for GIF creation
 
@@ -45,8 +45,19 @@ except ImportError:
 # Configuration
 # =============================================================================
 
-# Model checkpoint path (uses EMA weights for best quality)
-MODEL_PATH = 'training_results/model-10.pt'
+# Model checkpoint path (auto-detects latest, uses EMA weights for best quality)
+MODEL_PATH = 'models/ddpm_african_fabrics.pt'
+
+def find_latest_checkpoint():
+    """Find the best available model checkpoint."""
+    # First choice: consolidated model file (contains EMA weights after training fix)
+    if os.path.exists(MODEL_PATH):
+        return MODEL_PATH
+    # Fallback: latest Trainer checkpoint
+    checkpoints = sorted(Path('training_results').glob('model-*.pt'))
+    if checkpoints:
+        return str(checkpoints[-1])
+    return MODEL_PATH
 
 # Model architecture (must match training configuration)
 IMAGE_SIZE = 64
@@ -55,9 +66,9 @@ CHANNEL_MULTS = (1, 2, 4, 8)
 TIMESTEPS = 1000
 
 # Animation parameters
-NUM_KEYFRAMES = 5           # Number of distinct patterns to morph between (fewer = slower transitions)
-DURATION_SECONDS = 15       # Total animation duration
-FPS = 30                    # Frames per second
+NUM_KEYFRAMES = 4           # Number of distinct patterns to morph between
+DURATION_SECONDS = 8        # Total animation duration (shorter for manageable file size)
+FPS = 12                    # Frames per second (GIF-appropriate rate)
 OUTPUT_SIZE = 256           # Output resolution (upscaled from 64x64)
 
 # Sampling parameters
@@ -65,7 +76,7 @@ SAMPLING_STEPS = 250        # DDIM steps (matches training config for best quali
 RANDOM_SEED = 123           # For reproducible keyframes (change for different patterns)
 
 # Output file
-OUTPUT_PATH = 'ddpm_fabric_morph.gif'
+OUTPUT_PATH = os.path.join('visuals', 'ddpm_fabric_morph.gif')
 
 
 # =============================================================================
@@ -319,7 +330,7 @@ def upscale_image(img, target_size):
 
 def create_gif(frames, output_path, fps):
     """
-    Create a smooth GIF from frames.
+    Create a smooth, optimized GIF from frames.
 
     Parameters:
         frames: List of numpy arrays [H, W, 3]
@@ -328,22 +339,36 @@ def create_gif(frames, output_path, fps):
     """
     print(f"\nCreating GIF with {len(frames)} frames at {fps} FPS...")
 
-    # Calculate duration per frame in seconds
-    duration = 1.0 / fps
+    # Save GIF using PIL for better optimization control
+    pil_frames = [Image.fromarray(f) for f in frames]
+    duration_ms = int(1000 / fps)
 
-    # Save GIF
-    imageio.mimsave(
+    pil_frames[0].save(
         output_path,
-        frames,
-        fps=fps,
-        loop=0  # Infinite loop
+        save_all=True,
+        append_images=pil_frames[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=True
     )
 
-    # Get file size
     file_size = os.path.getsize(output_path) / (1024 * 1024)
     print(f"Saved to: {output_path}")
     print(f"File size: {file_size:.2f} MB")
     print(f"Duration: {len(frames) / fps:.1f} seconds")
+
+    # Try gifsicle for additional compression (if installed)
+    import subprocess
+    try:
+        subprocess.run(
+            ['gifsicle', '-O3', '--lossy=80', '--colors', '256',
+             output_path, '-o', output_path],
+            check=True, capture_output=True
+        )
+        optimized_size = os.path.getsize(output_path) / (1024 * 1024)
+        print(f"Optimized with gifsicle: {optimized_size:.2f} MB")
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        pass  # gifsicle not installed, PIL optimization is sufficient
 
 
 # =============================================================================
@@ -364,14 +389,15 @@ def generate_morph_animation():
         print("Warning: Generation on CPU will be slow (~30-60 minutes)")
         print("Consider using a GPU for faster generation (~10-15 minutes)")
 
-    # Check for checkpoint
-    if not os.path.exists(MODEL_PATH):
-        print(f"\nError: Checkpoint not found at '{MODEL_PATH}'")
+    # Find best available checkpoint
+    checkpoint_path = find_latest_checkpoint()
+    if not os.path.exists(checkpoint_path):
+        print(f"\nError: No checkpoint found at '{checkpoint_path}'")
         print("Please ensure training has completed (exercise3_train.py)")
         return
 
     # Load model
-    diffusion = load_model_from_checkpoint(MODEL_PATH, device)
+    diffusion = load_model_from_checkpoint(checkpoint_path, device)
 
     # Calculate frame counts
     total_frames = DURATION_SECONDS * FPS
@@ -426,6 +452,7 @@ def generate_morph_animation():
             torch.cuda.empty_cache()
 
     # Create GIF
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     create_gif(frames, OUTPUT_PATH, FPS)
 
     print("\n" + "=" * 60)
