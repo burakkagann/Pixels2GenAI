@@ -12,7 +12,7 @@ Overview
 
 Rosenblatt built the first perceptron in 1958 using three operations: multiply inputs by weights, sum the products, and check if the result crosses a threshold [LeCun2015a]_. We will build a working binary classifier in about 30 lines of NumPy. No frameworks, no hidden magic.
 
-Frank Rosenblatt introduced the perceptron in 1958 as a computational model inspired by biological neurons [Rosenblatt1958]_. It was the first machine that could learn to classify data [Crevier1993]_. The same weight-update rule still runs inside networks with billions of parameters today. When you write the weight update yourself, you see exactly where learning happens: right after each wrong prediction.
+Frank Rosenblatt introduced the perceptron in 1958 as a trainable binary classifier [Rosenblatt1958]_. It was the first machine that could learn to classify data [Crevier1993]_. The same weight-update rule still runs inside networks with billions of parameters today. When you write the weight update yourself, you see exactly where learning happens: right after each wrong prediction.
 
 Learning Objectives
 -------------------
@@ -36,7 +36,7 @@ Download and run the script to train a perceptron and visualize its learned deci
 
    python simple_perceptron.py
 
-.. figure:: perceptron_output.png
+.. figure:: visuals/perceptron_output.png
    :width: 450px
    :align: center
    :alt: Decision boundary learned by perceptron showing blue and orange regions separated by a line, with data points colored by class
@@ -52,9 +52,9 @@ Core Concepts
 Core Concept 1: What is a Perceptron?
 --------------------------------------
 
-Imagine taking two numbers, multiplying each by a weight, adding them up with a bias term, and checking whether the total is positive or negative. That check decides the output: 1 or 0. This is what a **perceptron** does. It was modeled on a simplified view of biological neurons [McCulloch1943]_, where dendrites receive signals, the cell body combines them, and the axon fires if the total exceeds a threshold.
+Imagine taking two numbers, multiplying each by a weight, adding them up with a bias term, and checking whether the total is positive or negative. That check decides the output: 1 or 0. This is what a **perceptron** does. Rosenblatt based it on McCulloch and Pitts's 1943 threshold logic unit [McCulloch1943]_: a mathematical node that sums weighted input signals and fires (outputs 1) only when the total exceeds a fixed threshold.
 
-The perceptron takes multiple numerical inputs, multiplies each by a corresponding weight, adds them together with a bias term, and applies an activation function to produce a binary output (0 or 1). Mathematically:
+In practice, the perceptron takes an array of numerical inputs, multiplies each by a learned weight, and sums the products with a bias term. A step function converts that sum into a binary output: 1 if the sum is non-negative, 0 otherwise. Mathematically:
 
 .. code-block:: text
 
@@ -67,7 +67,7 @@ Where:
 * **b** is the bias term (also learned)
 * **step(z)** is the step function: returns 1 if z >= 0, else 0
 
-.. figure:: perceptron_architecture.png
+.. figure:: visuals/perceptron_architecture.png
    :width: 550px
    :align: center
    :alt: Diagram showing perceptron architecture with input nodes x1 and x2, weights w1 and w2, summation node, step activation, and output y
@@ -76,15 +76,22 @@ Where:
 
 The weights determine how much each input contributes to the output. A large positive weight means that input strongly influences the output toward 1, while a large negative weight pushes it toward 0. The bias acts like a threshold, shifting when the perceptron fires.
 
-.. admonition:: Historical Note
+.. admonition:: Historical Context:
 
    In 1969, Minsky and Papert proved that a single perceptron cannot learn the XOR function [Minsky1969]_. This limitation contributed to the first "AI winter" when funding for neural network research dried up [Crevier1993]_. It took multi-layer networks (with hidden layers) to overcome this limitation, but those required new training algorithms like backpropagation.
+
+.. figure:: visuals/xor_impossibility.gif
+   :width: 700px
+   :align: center
+   :alt: Animation showing a line rotating through all angles across four XOR data points, never achieving zero classification errors
+
+   No single line can separate XOR. The boundary tries every angle but always misclassifies at least one point. *Diagram generated with Claude - Opus 4.5.*
 
 
 Core Concept 2: The Forward Pass
 ---------------------------------
 
-The **forward pass** is how the perceptron makes predictions. Given an input, it computes the weighted sum of inputs plus bias, then applies the step activation function to produce output.
+Feed an input into the perceptron and it returns 0 or 1. That computation is the **forward pass**: multiply each input by its weight, add the bias, and check whether the sum is positive or negative.
 
 .. code-block:: python
    :caption: Forward pass implementation
@@ -111,7 +118,14 @@ The **forward pass** is how the perceptron makes predictions. Given an input, it
 
 The forward pass is essentially drawing a line through the feature space. Points on one side of the line are Class 0; points on the other side are Class 1. The weights determine the slope of this line, and the bias determines where it crosses.
 
-.. figure:: linearly_separable.png
+.. figure:: visuals/forward_pass_computation.gif
+   :width: 700px
+   :align: center
+   :alt: Animation showing numerical values flowing through a perceptron: inputs multiply by weights, sum at the node, pass through the step function, and produce output
+
+   A forward pass with concrete numbers: inputs (0.7, 0.3) multiply by weights, sum with bias to get 0.39, and the step function outputs 1. *Diagram generated with Claude - Opus 4.5.*
+
+.. figure:: visuals/linearly_separable.png
    :width: 400px
    :align: center
    :alt: Scatter plot showing two clusters of points, orange in lower-left and blue in upper-right, that can be separated by a straight line
@@ -122,7 +136,7 @@ The forward pass is essentially drawing a line through the feature space. Points
 Core Concept 3: Learning from Errors
 -------------------------------------
 
-The perceptron learns through the **perceptron learning rule**, one of the earliest machine learning algorithms [Rosenblatt1958]_. The key insight is simple: if the prediction is wrong, adjust the weights to make it less wrong next time.
+When the perceptron predicts incorrectly, it adjusts its weights. Rosenblatt formalized this correction as the **perceptron learning rule** [Rosenblatt1958]_: if the prediction is wrong, nudge the weights to make it less wrong next time.
 
 .. code-block:: python
    :caption: Perceptron learning rule
@@ -149,21 +163,28 @@ The learning rule states:
 * **If predicted 0 but should be 1** (error = +1): increase weights in direction of input
 * **If predicted 1 but should be 0** (error = -1): decrease weights in direction of input
 
+.. figure:: visuals/weight_update_rule.gif
+   :width: 700px
+   :align: center
+   :alt: Animation showing a misclassified point, error computation, weight update formula, and the decision boundary shifting to correct the classification
+
+   One weight update step: the perceptron misclassifies a point, computes error, adjusts weights, and the boundary shifts to fix the mistake. *Diagram generated with Claude - Opus 4.5.*
+
 The **learning rate** controls how much the weights change on each update. A larger learning rate means bigger steps (faster learning but potentially unstable), while a smaller rate means smaller, more cautious updates.
 
-.. figure:: training_progression.gif
+.. figure:: visuals/training_progression.gif
    :width: 400px
    :align: center
    :alt: Animation showing decision boundary rotating and shifting as the perceptron trains over multiple epochs
 
    Watch the decision boundary evolve during training. Initially random, it gradually rotates to separate the two classes correctly.
 
-.. figure:: concept3_comparison.png
+.. figure:: visuals/concept3_comparison.png
    :width: 700px
    :align: center
    :alt: Side-by-side comparison showing best decision boundary on left and training error progression chart on right
 
-   Best decision boundary (left) and error over epochs (right). Diagram generated with Claude - Opus 4.5.
+   Best decision boundary (left) and error over epochs (right).
 
 .. admonition:: Why Does the Error Oscillate?
    :class: note
@@ -184,137 +205,175 @@ The **learning rate** controls how much the weights change on each update. A lar
 Hands-On Exercises
 ==================
 
-Now it is time to apply what you've learned with three progressively challenging exercises. Each builds on the previous one using the **Execute → Modify → Create** approach [Sweller1985]_, [Mayer2020]_.
+Now it is time to apply what you have learned with three progressively challenging exercises. Each builds on the previous one using the **Execute → Modify → Create** approach [Sweller1985]_, [Mayer2020]_.
 
 Exercise 1: Execute and Explore
 -------------------------------
 
-Download and run the perceptron implementation to observe its behavior.
+Download and run the script to train a perceptron and visualize its decision boundary.
 
-:download:`Download simple_perceptron.py <simple_perceptron.py>`
+:download:`Download exercise1_execute.py <exercise1_execute.py>`
 
-After running the code, answer these reflection questions:
+.. code-block:: bash
+
+   python exercise1_execute.py
+
+.. figure:: visuals/exercise1_result.png
+   :width: 500px
+   :align: center
+   :alt: Scatter plot of two clusters separated by a diagonal decision boundary line
+
+   The perceptron learns a straight line that separates orange (Class 0) from blue (Class 1) points.
+
+After observing the output, answer these reflection questions:
 
 1. How many epochs did it take to converge (reach zero errors)?
-2. What do the final weights and bias represent geometrically?
-3. If you run the training again with a different random seed, do you get the same weights?
+2. Look at the decision boundary line , what do the weights and bias determine about its position?
+3. Do all orange points fall on one side of the line and all blue points on the other?
 
 .. dropdown:: Answers and Explanation
    :class-title: sd-font-weight-bold
 
-   1. **Epochs to converge**: With seed 42 and this data, the perceptron typically converges in 1-3 epochs. The data is well-separated, making it an easy classification problem.
+   1. **Epochs to converge**: With seed 42 and this well-separated data, the perceptron typically converges in 1-2 epochs. The clusters are far apart, so even near-zero initial weights classify most points correctly.
 
-   2. **Geometric interpretation**: The weights [w1, w2] define the normal vector to the decision boundary line. The equation w1*x1 + w2*x2 + b = 0 describes a line in 2D space. Points where this sum is positive are Class 1; points where it is negative are Class 0.
+   2. **Geometric interpretation**: The weights [w1, w2] define the normal vector to the decision boundary line. The equation w1*x1 + w2*x2 + b = 0 describes a line in 2D space. Points where this sum is positive are Class 1; points where it is negative are Class 0. The bias shifts the line away from the origin.
 
-   3. **Different runs**: With different random seeds (for weight initialization), you will get different final weights. There are infinitely many valid decision boundaries for linearly separable data. The perceptron finds one that works, but not necessarily the same one each time.
+   3. **Separation**: Yes, because the data is linearly separable (the two clusters do not overlap), the perceptron finds a line that perfectly separates them. The convergence theorem [Novikoff1963]_ guarantees this will happen in a finite number of steps.
+
+.. dropdown:: NumPy Functions Used
+   :class-title: sd-font-weight-bold
+
+   ``np.random.seed(n)``
+      Lock the random number generator so every run produces identical results. Useful for debugging and reproducibility.
+
+   ``np.random.randn(rows, cols)``
+      Draw random numbers from a standard normal distribution (bell curve with mean 0, standard deviation 1). Multiply by a constant to scale.
+
+   ``np.dot(a, b)``
+      Dot product: multiply corresponding elements and sum them. For vectors a=[a1, a2] and b=[b1, b2], returns a1*b1 + a2*b2.
+
+   ``np.vstack([a, b])``
+      Stack arrays vertically (row-wise). Combines two arrays with shape (50, 2) into one array with shape (100, 2).
+
+   ``np.array([...])``
+      Create a NumPy array from a Python list. Enables fast element-wise math operations.
+
+   ``np.linspace(start, stop, n)``
+      Create n evenly spaced values between start and stop. Used here to draw the decision boundary line across the plot.
 
 
 Exercise 2: Modify Parameters
 -----------------------------
 
-Experiment with the learning rate to understand its effect on training.
+Experiment with the CONFIG values to see how learning rate and data difficulty affect the perceptron.
 
-**Goal 1**: Test different learning rates
+:download:`Download exercise2_modify.py <exercise2_modify.py>`
 
-.. code-block:: python
-   :caption: Try different learning rates
+.. code-block:: bash
 
-   # Very slow learning
-   p1 = Perceptron(input_size=2, learning_rate=0.01)
-   h1 = p1.train(X, y, epochs=50)
-   print(f"LR=0.01: {len(h1)} epochs, errors={h1}")
+   python exercise2_modify.py
 
-   # Moderate learning
-   p2 = Perceptron(input_size=2, learning_rate=0.1)
-   h2 = p2.train(X, y, epochs=50)
-   print(f"LR=0.1: {len(h2)} epochs")
+The script generates a two-panel image: the decision boundary on the left and the error-per-epoch curve on the right. Each time you change CONFIG values and re-run, both panels update.
 
-   # Fast learning
-   p3 = Perceptron(input_size=2, learning_rate=1.0)
-   h3 = p3.train(X, y, epochs=50)
-   print(f"LR=1.0: {len(h3)} epochs")
+**Goal 1**: Slow down learning
 
-.. figure:: learning_rate_comparison.png
-   :width: 550px
-   :align: center
-   :alt: Four panels showing decision boundaries for different learning rates, from slow (0.01) to very fast (1.0)
+Change ``LEARNING_RATE`` from ``0.1`` to ``0.01``. Run the script and compare the error curve.
 
-   Decision boundaries for different learning rates. Diagram generated with Claude - Opus 4.5.
-
-**Goal 2**: Modify the data distribution
-
-Try changing the cluster centers to make the problem harder:
-
-.. code-block:: python
-   :caption: Closer clusters (harder problem)
-
-   # Closer clusters - harder to separate
-   class_0 = np.random.randn(50, 2) * 0.5 + [-0.5, -0.5]
-   class_1 = np.random.randn(50, 2) * 0.5 + [0.5, 0.5]
-
-Observe how the number of training epochs changes when the clusters are closer together.
-
-.. dropdown:: Hints and Solutions
+.. dropdown:: What to expect
    :class-title: sd-font-weight-bold
 
-   **Observations**:
+   With a smaller learning rate, each weight update is more cautious. For this well-separated data the perceptron still converges quickly (1-2 epochs), but the weights are smaller in magnitude. With harder data (see Goals 2-3), the difference becomes more visible.
 
-   * **Small learning rate (0.01)**: More epochs needed, but stable convergence
-   * **Moderate learning rate (0.1)**: Good balance of speed and stability
-   * **Large learning rate (1.0)**: Fewer epochs but can overshoot (not visible for this simple problem)
-   * **Closer clusters**: More epochs needed because data points are closer to the boundary
+**Goal 2**: Make the clusters overlap
+
+Change ``CLUSTER_SPREAD`` from ``0.5`` to ``1.5`` (keep other values at their defaults). This widens each cluster so they overlap in the middle.
+
+.. dropdown:: What to expect
+   :class-title: sd-font-weight-bold
+
+   When clusters overlap, the data is no longer linearly separable , no single straight line can classify every point correctly. The perceptron trains for all 50 epochs without converging, and the error curve oscillates between 3-6 misclassified points. This is the fundamental limitation that Minsky and Papert identified [Minsky1969]_.
+
+**Goal 3**: Push clusters almost together
+
+Change ``CLUSTER_DISTANCE`` from ``1.0`` to ``0.3`` (reset ``CLUSTER_SPREAD`` to ``0.5``). The two cluster centers are now only 0.6 apart instead of 2.0.
+
+.. dropdown:: What to expect
+   :class-title: sd-font-weight-bold
+
+   The clusters are so close that their edges overlap. The perceptron oscillates: fixing one misclassified point breaks another. The error curve shows a characteristic zigzag pattern , this is the **Perceptron Cycling Theorem** [Block1962]_ in action. The boundary keeps shifting back and forth without settling.
+
+.. figure:: visuals/expected_exercise2_goals.png
+   :width: 700px
+   :align: center
+   :alt: Three-column comparison showing decision boundaries and error curves for Goals 1, 2, and 3
+
+   Expected results for each goal. Left: slow learning rate. Center: overlapping clusters. Right: clusters almost touching.
+
+.. dropdown:: NumPy Functions Used
+   :class-title: sd-font-weight-bold
+
+   ``np.meshgrid(x, y)``
+      Create 2-D coordinate grids from two 1-D arrays. Returns two arrays: one with x-values repeated across rows, one with y-values repeated down columns. Used to classify every pixel in the plot and shade the background.
+
+   ``array.reshape(shape)``
+      Change the shape of an array without copying data. ``reshape(-1)`` flattens to 1-D; ``reshape(rows, cols)`` restores a 2-D grid.
 
 
 Exercise 3: Create Your Own
 ---------------------------
 
-Complete the starter code to implement your own perceptron from scratch.
+Complete the starter code to build a working perceptron from scratch. The data generation, training loop structure, and visualization are all provided , you fill in the three core algorithm pieces.
 
-:download:`Download perceptron_starter.py <perceptron_starter.py>`
+:download:`Download exercise3_create.py <exercise3_create.py>`
 
 **Your tasks**:
 
-1. Complete ``__init__`` to initialize weights, bias, and learning rate
-2. Complete ``forward`` to compute predictions using the step function
-3. Complete ``train`` to update weights using the perceptron learning rule
+1. **TODO 1** — Initialize weights, bias, and learning rate in ``__init__``
+2. **TODO 2** — Compute the weighted sum and apply the step function in ``forward``
+3. **TODO 3** — Predict, compute error, and update weights in the training loop
 
 .. dropdown:: Hint 1: Initialization
    :class-title: sd-font-weight-bold
 
-   For ``__init__``:
+   For ``__init__``, set three attributes:
 
-   .. code-block:: python
-
-      self.weights = np.random.randn(input_size) * 0.01
-      self.bias = 0.0
-      self.learning_rate = learning_rate
+   * ``self.weights`` — use ``np.random.randn(input_size) * 0.01`` to start with small random values
+   * ``self.bias`` — set to ``0.0``
+   * ``self.learning_rate`` — store the ``learning_rate`` argument
 
 .. dropdown:: Hint 2: Forward Pass
    :class-title: sd-font-weight-bold
 
-   For ``forward``:
+   For ``forward``, two steps:
 
    .. code-block:: python
 
+      # Step A: compute the weighted sum
       weighted_sum = np.dot(self.weights, x) + self.bias
+
+      # Step B: apply step activation
       if weighted_sum >= 0:
           return 1
       else:
           return 0
 
+   ``np.dot`` multiplies each weight by the corresponding input and sums the products. Adding the bias shifts the decision threshold.
+
 .. dropdown:: Hint 3: Training Loop
    :class-title: sd-font-weight-bold
 
-   For ``train``:
+   For ``train``, inside the inner loop:
 
    .. code-block:: python
 
       y_pred = self.forward(X[i])
       error = y[i] - y_pred
       if error != 0:
-          self.weights = self.weights + self.learning_rate * error * X[i]
-          self.bias = self.bias + self.learning_rate * error
+          self.weights += self.learning_rate * error * X[i]
+          self.bias += self.learning_rate * error
           errors += 1
+
+   The error is +1 (predicted too low), 0 (correct), or -1 (predicted too high). The weight update nudges the boundary in the direction that reduces this specific error.
 
 .. dropdown:: Complete Solution
    :class-title: sd-font-weight-bold
@@ -337,6 +396,7 @@ Complete the starter code to implement your own perceptron from scratch.
               return 1 if weighted_sum >= 0 else 0
 
           def train(self, X, y, epochs=100):
+              error_history = []
               for epoch in range(epochs):
                   errors = 0
                   for i in range(len(X)):
@@ -346,82 +406,107 @@ Complete the starter code to implement your own perceptron from scratch.
                           self.weights += self.learning_rate * error * X[i]
                           self.bias += self.learning_rate * error
                           errors += 1
+                  error_history.append(errors)
                   if errors == 0:
                       print(f"Converged in {epoch + 1} epochs")
-                      return
+                      return error_history
               print(f"Training completed after {epochs} epochs")
+              return error_history
+
+When your TODOs are complete, run the script:
+
+.. code-block:: bash
+
+   python exercise3_create.py
+
+.. figure:: visuals/exercise1_result.png
+   :width: 500px
+   :align: center
+   :alt: Expected output showing decision boundary separating two clusters
+
+   Expected output: a decision boundary separating two clusters, similar to Exercise 1. If your plot looks like this, your perceptron works.
+
+.. dropdown:: NumPy Functions Used in the TODOs
+   :class-title: sd-font-weight-bold
+
+   ``np.random.randn(n)``
+      Draw n random numbers from a standard normal distribution. Multiplying by 0.01 keeps initial weights small, which prevents large initial outputs and helps stable learning.
+
+   ``np.dot(a, b)``
+      Dot product: the core operation of the perceptron. For weights [w1, w2] and input [x1, x2], it computes w1*x1 + w2*x2 , the weighted sum that determines which side of the boundary a point falls on.
+
+Make It Your Own
+^^^^^^^^^^^^^^^^
+
+After your perceptron works, try these experiments using the CONFIG section at the bottom of the script:
+
+* Change ``LEARNING_RATE`` to ``0.01`` or ``1.0`` and compare the error curves
+* Change ``NUM_POINTS`` to ``200`` for denser clusters
+* Try ``RANDOM_SEED = 7`` for a completely different data layout
+* Add a third cluster and observe what the perceptron does (hint: it still draws a single line)
 
 
-Creative Challenge: Geometric Art with Perceptrons
---------------------------------------------------
+Creative Challenge: Evolving Geometric Art
+-------------------------------------------
 
-Now that you understand how perceptrons create decision boundaries, use multiple perceptrons to create abstract geometric art. Each perceptron divides the canvas with a linear boundary, and combining several creates Mondrian-like compositions.
+In Exercise 3, you built a perceptron that **learns** decision boundaries from data. Now you will use that same perceptron to create art ,and watch the art assemble itself as training progresses.
 
-.. figure:: perceptron_art.png
+The idea: train 4 perceptrons on different datasets. Each perceptron learns a boundary at a different angle. Combine their 0/1 outputs into a binary signature (4 bits = 16 possible regions), assign each region a color, and render the canvas. By recording the weights after each training epoch, you can animate the entire process as a GIF.
+
+.. figure:: visuals/evolving_art.gif
    :width: 400px
    :align: center
-   :alt: Abstract geometric art created by 4 perceptrons dividing a canvas into 16 colored regions
+   :alt: Animated GIF showing geometric regions shifting and stabilizing as 4 perceptrons train simultaneously
 
-   Geometric art generated by 4 perceptrons. Each perceptron creates a linear boundary, resulting in 2^4 = 16 distinct regions with unique colors.
+   Watch the learning rule in action. Each frame is one training epoch ,the boundaries rotate and shift until they converge to their final positions.
 
-**Your Goal**: Create this image using multiple perceptrons. Try to figure it out yourself before looking at the hints.
+.. figure:: visuals/evolving_art_final.png
+   :width: 400px
+   :align: center
+   :alt: Final frame showing 4 linear boundaries creating a radial geometric composition with pastel colored regions
 
-.. dropdown:: Hint 1: The Core Idea
+   The final converged composition. Four learned decision boundaries create 16 distinct colored regions.
+
+**Your Goal**: Run the creative challenge script using the Perceptron class you built in Exercise 3.
+
+:download:`Download creative_challenge.py <creative_challenge.py>`
+
+.. code-block:: bash
+
+   python creative_challenge.py
+
+The script contains a reference Perceptron class. If you completed Exercise 3, replace it with your own to verify your implementation produces the same result.
+
+.. dropdown:: How It Works
    :class-title: sd-font-weight-bold
 
-   Each perceptron outputs 0 or 1 for any point. With 4 perceptrons, each pixel
-   gets a 4-bit "signature" (0000 to 1111), creating 16 unique regions. Each
-   region gets a different color.
+   1. **Training data** defines each boundary's angle. Each perceptron gets two clusters positioned so the learned boundary passes between them at a specific orientation (vertical, horizontal, diagonal, anti-diagonal).
 
-.. dropdown:: Hint 2: Getting Started
+   2. **Epoch-by-epoch training** uses the same learning rule from Exercise 3. After each epoch, the canvas is re-rendered with the current weights ,this produces one animation frame.
+
+   3. **Binary signatures** combine outputs from all 4 perceptrons. Each pixel gets a 4-bit integer (0-15), which maps to a color from a 16-color palette.
+
+   4. **Convergence** locks the composition in place. Once all perceptrons classify their training data perfectly, the boundaries stop moving and the art is complete.
+
+.. dropdown:: Understanding the CONFIG Section
    :class-title: sd-font-weight-bold
 
-   1. Create a simple Perceptron class with random weights (no training needed)
-   2. Create 4 perceptrons: ``perceptrons = [Perceptron(2) for _ in range(4)]``
-   3. For each pixel, compute its signature by calling ``forward()`` on each perceptron
+   ``LEARNING_RATE``
+      Controls animation speed. Small values (0.05) produce many frames with gradual changes. Large values (0.5) converge fast with dramatic jumps.
 
-.. dropdown:: Hint 3: Computing the Signature
-   :class-title: sd-font-weight-bold
+   ``SPREAD``
+      How wide each cluster is. Smaller spread (0.2) = easy to learn, fast convergence. Larger spread (0.8) = overlapping clusters, boundaries may oscillate forever.
 
-   .. code-block:: python
-
-      # For each pixel at (x, y), normalize to range (-2, 2)
-      point = np.array([(x - 200) / 100, (y - 200) / 100])
-
-      # Compute binary signature: sum of 2^i * perceptron_i(point)
-      signature = sum(p.forward(point) * (2 ** i)
-                      for i, p in enumerate(perceptrons))
-
-.. dropdown:: Hint 4: Assigning Colors
-   :class-title: sd-font-weight-bold
-
-   Create a color palette with 16 colors (one per region):
-
-   .. code-block:: python
-
-      colors = [[80 + 140 * ((i * 23 % 16) % 4) // 3,
-                 80 + 140 * (((i * 23 % 16) // 2) % 4) // 3,
-                 80 + 140 * (((i * 23 % 16) // 4) % 4) // 3]
-                for i in range(16)]
-
-:download:`Download Solution <geometric_art_solution.py>`
-
-The solution uses the Pillow library [PillowDocs911]_ to save the generated image.
+   ``BOUNDARY_CONFIGS``
+      The most creative parameter. Each pair of centers defines the angle of one boundary. Move the centers to redesign the composition.
 
 **Experiments to try**:
 
-* Change the number of perceptrons (3-6 work well)
-* Modify the seed for different compositions
-* Create your own color palette
-* Add gradients within regions based on distance to boundaries
-
-.. note:: Implementation Note
-
-   The perceptron implementations in this exercise are inspired by the
-   following foundational references:
-
-   - Rosenblatt, F. (1958). *The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain*, Psychological Review — the original perceptron algorithm and learning rule
-   - scikit-learn Perceptron, https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html — modern reference implementation of the perceptron classifier
+* Change ``RANDOM_SEED`` to 7, 123, or 999 for different compositions
+* Set ``NUM_PERCEPTRONS`` to 5 or 6 for more complex regions (32 or 64 colors)
+* Set ``LEARNING_RATE`` to 0.5 to see how fast convergence looks vs. 0.05
+* Edit ``BOUNDARY_CONFIGS`` to create boundaries that are all nearly parallel, or all pass through the same point
+* Set ``SPREAD`` to 1.0 so clusters overlap ,watch the boundaries oscillate without converging (the Perceptron Cycling Theorem [Block1962]_ in action)
 
 
 Summary
