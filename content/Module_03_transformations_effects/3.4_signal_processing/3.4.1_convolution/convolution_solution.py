@@ -18,38 +18,21 @@ import os
 # =============================================================================
 # Step 1: Load the Brandenburg Gate image
 # =============================================================================
-# Path to the shared Brandenburg Gate image (relative from this directory)
-IMAGE_PATH = '../../../../../_static/images/bbtor.jpg'
+# The image is stored in the same folder as this script.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+IMAGE_PATH = os.path.join(SCRIPT_DIR, 'bbtor.jpg')
 
-# Check if the image file exists
-if os.path.exists(IMAGE_PATH):
-    # Load image and convert to grayscale
-    # Grayscale has one channel, simplifying the convolution process
-    img = Image.open(IMAGE_PATH).convert('L')
+# Load image and convert to grayscale
+# Grayscale has one channel, simplifying the convolution process
+img = Image.open(IMAGE_PATH).convert('L')
 
-    # Resize for faster processing (256x256 is manageable for nested loops)
-    img = img.resize((256, 171))
+# Resize for faster processing (256x171 is manageable for nested loops)
+img = img.resize((256, 171))
 
-    # Convert to numpy array with float64 for precision
-    # Float64 prevents overflow when computing kernel products
-    image = np.array(img, dtype=np.float64)
-    print(f"Loaded Brandenburg Gate image: {image.shape[1]}x{image.shape[0]} pixels")
-else:
-    # Fallback: create synthetic test pattern if image not found
-    print(f"Warning: Image not found at {IMAGE_PATH}")
-    print("Creating a synthetic test pattern instead...")
-
-    SIZE = 256
-    image = np.zeros((SIZE, SIZE), dtype=np.float64)
-
-    # Add some circles and rectangles for edge detection demo
-    for y in range(SIZE):
-        for x in range(SIZE):
-            dist_center = np.sqrt((x - 128)**2 + (y - 128)**2)
-            if dist_center < 60:
-                image[y, x] = 255
-            elif 80 < x < 180 and 20 < y < 80:
-                image[y, x] = 200
+# Convert to numpy array with float64 for precision
+# Float64 prevents overflow when computing kernel products
+image = np.array(img, dtype=np.float64)
+print(f"Loaded Brandenburg Gate image: {image.shape[1]}x{image.shape[0]} pixels")
 
 # =============================================================================
 # Step 2: Define the edge detection kernel
@@ -124,10 +107,17 @@ result = apply_convolution(image, edge_kernel)
 print("Convolution complete!")
 
 # =============================================================================
-# Step 5: Post-process and save the result
+# Step 5: Post-process output values
 # =============================================================================
-# Edge detection produces negative values (dark-to-light edges) and
-# values > 255 (light-to-dark edges). We need to handle this for display.
+# Edge detection kernels sum to 0, so the convolution output can include:
+#   - Negative values (where center pixel is darker than neighbors)
+#   - Values > 255 (where center pixel is much brighter than neighbors)
+#
+# Two approaches (see Core Concept 2 in README.rst):
+#   Option 1: np.clip(result, 0, 255) -- simple, discards negative edges
+#   Option 2: Min-max normalization -- preserves all edge responses
+#
+# We use Option 2 here for richer visualization.
 
 # Option 1: Clip to valid range (simple but may lose information)
 result_clipped = np.clip(result, 0, 255)
@@ -145,7 +135,7 @@ final_result = result_normalized.astype(np.uint8)
 
 # Save the edge detection result
 output_image = Image.fromarray(final_result, mode='L')
-output_image.save('convolution_solution.png')
+output_image.save(os.path.join(SCRIPT_DIR, 'visuals', 'convolution_solution.png'))
 
 print(f"\nResult saved as convolution_solution.png")
 print(f"  Original pixel range: 0-255")
@@ -174,7 +164,7 @@ axes[1].axis('off')
 plt.suptitle('Convolution in Action: Finding Edges',
              fontsize=14, fontweight='bold')
 plt.tight_layout()
-plt.savefig('convolution_comparison.png', dpi=150, bbox_inches='tight',
+plt.savefig(os.path.join(SCRIPT_DIR, 'visuals', 'convolution_comparison.png'), dpi=150, bbox_inches='tight',
             facecolor='white', edgecolor='none')
 plt.close()
 

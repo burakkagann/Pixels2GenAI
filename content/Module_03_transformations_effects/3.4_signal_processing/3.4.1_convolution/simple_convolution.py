@@ -14,6 +14,9 @@ Implementation inspired by:
 
 import numpy as np
 from PIL import Image
+import os
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =============================================================================
 # Configuration - Try changing these values!
@@ -94,7 +97,7 @@ combined[:, original_cropped.shape[1] + gap:] = output
 
 # Convert to 8-bit and save
 result = Image.fromarray(combined.astype(np.uint8), mode='L')
-result.save('simple_convolution.png')
+result.save(os.path.join(SCRIPT_DIR, 'visuals', 'simple_convolution.png'))
 
 print("Convolution complete!")
 print(f"  Original size: {CANVAS_SIZE}x{CANVAS_SIZE}")
