@@ -10,7 +10,7 @@
 Overview
 ========
 
-Digital images are arrays of numbers. A single 4K image contains 26 million pixels. Three integers per pixel, each specifying the intensity of the red, green, and blue channels. Manipulating these arrays directly opens every technique from vintage photo filters to training convolutional networks.
+A single 4K image stores 26 million pixels, three integers each, specifying red, green, and blue intensity. Manipulating these arrays is the basis for color correction, compositing, and eventually training convolutional networks.
 
 **Learning Objectives**
 
@@ -25,7 +25,7 @@ By completing this module, you will:
 Quick Start: Your First Colorful Image
 ========================================
 
-Let's start with something visual. Run this code to create a simple image:
+Run this code to see a split image, cyan on top, magenta on the bottom:
 
 .. code-block:: python
    :caption: Create a two-color image in seconds
@@ -50,7 +50,7 @@ Let's start with something visual. Run this code to create a simple image:
    pil_image.show()  # Opens in default image viewer
    pil_image.save('cyan_magenta.png')  # Save as PNG
 
-.. figure:: ../../../../../images/cyan_magenta_example.png
+.. figure:: ../../../../images/cyan_magenta_example.png
    :width: 300px
    :align: center
    :alt: Example output showing cyan on top, magenta on bottom
@@ -64,7 +64,7 @@ Let's start with something visual. Run this code to create a simple image:
 Core Concept 1: Grayscale - The Foundation
 ==========================================
 
-Before diving into color, let's understand the simplest form of digital images: grayscale.
+Color images use three channels per pixel. Grayscale uses one, and it is the simpler case to start with.
 
 **A grayscale image is a 2D grid of pixels, where each pixel has a brightness value** [Gonzalez2007]_:
 
@@ -90,7 +90,7 @@ View any digital photograph in grayscale, and you're looking at a 2D grid...
 
 The ``Image.fromarray()`` function from Pillow converts NumPy arrays into displayable images [PillowDocs]_.
 
-.. figure:: /content/Module_00_foundations_definitions/0.3_images_as_data/0.3.1_creating_images/grayscale/lincoln.png
+.. figure:: /content/Module_00_foundations_definitions/0.3_images_as_data/0.3.1_creating_images/lincoln.png
    :width: 700px
    :align: center
    :alt: Diagram showing how array values map to pixel brightness
@@ -141,12 +141,17 @@ NumPy arrays use **[row, column]** indexing [NumPyDocs]_:
 Core Concept 2: Understanding Digital Images
 =============================================
 
-Now that you understand grayscale, let's extend to color images with RGB channels.
-
 The fundamental insight
 ------------------------
 
-**An RGB image is a 3D array of numbers.** Each number represents the intensity of light for one color channel at one pixel location. In Python using NumPy, an RGB image has shape `(height, width, 3)`. The three channels represent red, green, and blue intensities [Gonzalez2007]_. 
+**Where a grayscale pixel stores one brightness value, a color pixel stores three: red intensity, green intensity, and blue intensity.** The array gains a third axis to hold them, producing shape ``(height, width, 3)`` [Gonzalez2007]_.
+
+.. figure:: visuals/array_3d_structure.gif
+   :width: 700px
+   :align: center
+   :alt: Animated diagram showing an RGB image splitting into three channel layers
+
+   Three separate intensity layers combine into one color image. *Diagram generated with Claude - Opus 4.5*
 
 .. code-block:: python
 
@@ -160,9 +165,13 @@ The fundamental insight
    # Access just the red channel
    red_channel = image[:, :, 0]
 
+The colon ``:`` in array indexing means **all elements** along that axis. So ``image[:, :, 0]`` reads as "every row, every column, channel 0 (red)." Similarly, ``image[50, 75, :]`` means "row 50, column 75, all channels."
+
+When you assign a single value to a slice — for example ``image[:, :, 0] = 255`` — NumPy fills every element in that slice with the value. NumPy calls this **broadcasting**. The single number is replicated to fill every position in the target slice.
+
 .. important::
-   
-   Array indexing uses `image[y, x, channel]`. Did you notice **y comes first** (row), then x (column)? This follows matrix notation, where the origin (0, 0) is at the **top-left corner**. 
+
+   Array indexing uses ``image[y, x, channel]``. Did you notice **y comes first** (row), then x (column)? This follows matrix notation, where the origin (0, 0) is at the **top-left corner**.
 
 .. admonition:: Technical Note: Display Subpixels
 
@@ -171,7 +180,7 @@ The fundamental insight
 Core Concept 3: The RGB Color Model
 ------------------------------------
 
-RGB is an **additive color model**, meaning we start with darkness (black) and add colored light: 
+RGB works by **addition**. Start with a black screen and add colored light:
 
 * **Red (255, 0, 0)** -> Pure red light
 * **Green (0, 255, 0)** -> Pure green light  
@@ -181,12 +190,12 @@ RGB is an **additive color model**, meaning we start with darkness (black) and a
 
 Each channel stores values from **0 to 255** (8 bits = 256 possible values), giving us **16,777,216 total colors** (256³). This is called "24-bit true color" and exceeds the approximately 10 million colors the human eye can discriminate [Hunt2004]_, [Foley1990]_. 
 
-.. figure:: rgb_additive_mixing_local.png
-   :width: 500px
+.. figure:: visuals/rgb_additive_mixing.gif
+   :width: 700px
    :align: center
-   :alt: Diagram showing RGB additive color mixing
+   :alt: Animated diagram showing additive RGB color mixing
 
-   RGB additive color mixing: overlapping light creates secondary colors. Diagram generated with Claude - Opus 4.5
+   Additive color mixing: Red + Green = Yellow, all three = White. *Diagram generated with Claude - Opus 4.5*
 
 .. note::
    
@@ -195,7 +204,7 @@ Each channel stores values from **0 to 255** (8 bits = 256 possible values), giv
 Common RGB color patterns
 --------------------------
 
-Understanding these patterns helps you think in RGB [Foley1990]_:
+A few patterns are worth memorizing [Foley1990]_:
 
 * **Primary colors**: One channel at 255, others at 0
 * **Secondary colors**: Two channels at 255, one at 0
@@ -213,161 +222,187 @@ Understanding these patterns helps you think in RGB [Foley1990]_:
 Hands-On Exercises
 ==================
 
-Now it is time to apply what you've learned with three progressively challenging exercises. Each builds on the previous one using the **Execute → Modify → Create** approach [Sweller1985]_, [Mayer2020]_. 
+Now it is time to apply what you've learned with three progressively challenging exercises. Each builds on the previous one using the **Execute → Modify → Create** approach [Sweller1985]_, [Mayer2020]_.
 
 Exercise 1: Execute and explore
 ---------------------------------
 
-Run the following code and observe the output. Try to predict what color you'll see before running it.
+Run ``exercise1_execute.py`` and observe the output. Try to predict what color you will see before looking at the result.
+
+.. code-block:: bash
+
+   python exercise1_execute.py
+
+The script creates a 150x150 solid-color image:
 
 .. code-block:: python
-   :caption: Exercise 1 — Solid color image
+   :caption: exercise1_execute.py
    :linenos:
-   
+
    import numpy as np
    from PIL import Image
 
-   # Create a 150x150 image
+   # Create a blank 150x150 image with 3 color channels
    image = np.zeros((150, 150, 3), dtype=np.uint8)
 
-   # Set all pixels to the same color
-   image[:, :, 0] = 255  # Red channel
-   image[:, :, 1] = 128  # Green channel
-   image[:, :, 2] = 0    # Blue channel
+   # Set the color of every pixel
+   image[:, :, 0] = 255  # Red channel   — full intensity
+   image[:, :, 1] = 128  # Green channel — half intensity
+   image[:, :, 2] = 0    # Blue channel  — off
 
-   # Convert to PIL and display
-   pil_image = Image.fromarray(image)
-   pil_image.show()
-   pil_image.save('exercise1_color.png')
+   result = Image.fromarray(image, mode='RGB')
+   result.save('exercise1_color.png')
+
+.. figure:: visuals/expected_exercise1.png
+   :width: 150px
+   :align: center
+   :alt: Expected output — orange square
+
+   Expected output
 
 **Reflection questions:**
 
 * What color appears? Why?
 * What would happen if you set all three channels to 255?
-* What would `(0, 0, 0)` look like?
+* What would ``(0, 0, 0)`` look like?
 
 .. dropdown:: Solution & Explanation
-   
+
    **Answer:** Orange (or orange-red)
-   
-   **Why:** Red at maximum (255), green at half intensity (128), and blue absent (0) creates an orange hue. The color `(255, 128, 0)` sits between pure red `(255, 0, 0)` and yellow `(255, 255, 0)`. 
-   
+
+   **Why:** Red at maximum (255), green at half intensity (128), and blue absent (0) creates an orange hue. The color ``(255, 128, 0)`` sits between pure red ``(255, 0, 0)`` and yellow ``(255, 255, 0)``.
+
    * Setting all channels to 255 → **White** (all light)
    * Setting all channels to 0 → **Black** (no light)
 
 Exercise 2: Modify to achieve goals
 -------------------------------------
 
+Open ``exercise2_modify.py`` in your editor. The script starts with the same orange color as Exercise 1 — your job is to change the channel values to match each goal below. After each change, re-run the script to see the result.
 
-Modify the code from Exercise 1 to create each of these colors. Change only the three channel values.
+.. code-block:: bash
+
+   python exercise2_modify.py
 
 **Goals:**
 
-1. Create pure cyan (hint: which two colors of light make cyan?)
-2. Create a medium gray
-3. Create a dark purple
+1. **Create pure cyan** — which two colors of light combine to make cyan?
+2. **Create a medium gray** — what must be true about all three channels?
+3. **Create a dark purple** — which channels are involved, and how do you keep it dark?
+
+.. figure:: visuals/expected_exercise2_goals.png
+   :width: 300px
+   :align: center
+   :alt: Target colors for the three goals — cyan, gray, purple
+
+   Target colors — compare your output to these after each goal
+
+.. dropdown:: Goal 1: What to expect
+
+   Cyan is a **secondary color** formed by combining green and blue light. Your image should look like a bright blue-green.
+
+.. dropdown:: Goal 2: What to expect
+
+   Grayscale occurs when **all three channels are equal**. A value of 128 for each gives you a medium gray, right between black and white.
+
+.. dropdown:: Goal 3: What to expect
+
+   Purple combines red and blue. Keeping the values low (under 100) makes it dark. Your image should look like a deep violet.
 
 .. dropdown:: Solutions
-   
+
    **1. Pure cyan:**
-   
+
    .. code-block:: python
-      
+
       image[:, :, 0] = 0    # Red: off
       image[:, :, 1] = 255  # Green: full
       image[:, :, 2] = 255  # Blue: full
       # Result: (0, 255, 255)
-   
-   Cyan is a **secondary color** formed by combining green and blue light.
-   
+
    **2. Medium gray:**
-   
+
    .. code-block:: python
-      
+
       image[:, :, 0] = 128
       image[:, :, 1] = 128
       image[:, :, 2] = 128
       # Result: (128, 128, 128)
-   
-   Grayscale occurs when **all three channels are equal**. The value determines brightness.
-   
+
    **3. Dark purple:**
-   
+
    .. code-block:: python
-      
+
       image[:, :, 0] = 64   # Red: low
       image[:, :, 1] = 0    # Green: off
       image[:, :, 2] = 96   # Blue: medium-low
       # Result: (64, 0, 96) or similar
-   
-   Purple combines red and blue. Keep values low for a dark shade. Try `(80, 0, 120)` for a slightly brighter purple.
+
+   Try ``(80, 0, 120)`` for a slightly brighter purple.
 
 Exercise 3: Create a gradient pattern
 ---------------------------------------
 
+Open ``exercise3_create.py`` in your editor. The script is mostly complete but has three TODOs for you to fill in. Your goal is to create a 200x200 image that transitions smoothly from pure red on the left to pure blue on the right.
 
-Now create something from scratch: a horizontal color gradient that transitions smoothly from one color to another.
+.. code-block:: bash
 
-**Goal:** Create a 200×200 image that transitions from pure red on the left to pure blue on the right.
+   python exercise3_create.py
 
-**Hints:**
+.. dropdown:: Hint 1: Think about proportions
 
-* Use a `for` loop to iterate over columns
-* The red channel should decrease from left to right
-* The blue channel should increase from left to right
-* Calculate values proportionally: `value = column * 255 // width`
+   As you move from left to right across the image, each column represents a position from 0 to ``width - 1``. You can convert this to a value from 0 to 255 using integer division: ``col * 255 // width``.
 
-.. code-block:: python
-   :caption: Exercise 3 starter code
-   
-   import numpy as np
-   from PIL import Image
+.. dropdown:: Hint 2: Which channels change?
 
-   # Create image
-   height, width = 200, 200
-   image = np.zeros((height, width, 3), dtype=np.uint8)
+   * The **red** channel should start at 255 (left edge) and decrease to 0 (right edge).
+   * The **blue** channel should start at 0 (left edge) and increase to 255 (right edge).
+   * The **green** channel stays at 0 throughout.
 
-   # Your code here: fill the image with a gradient
-   # Loop over columns and set red and blue channels
+.. dropdown:: Hint 3: Partial code
 
-   # Convert to PIL and display
-   pil_image = Image.fromarray(image)
-   pil_image.show() 
-   pil_image.save('gradient.png')
+   .. code-block:: python
+
+      proportion = col * 255 // width
+      image[:, col, 0] = 255 - proportion  # Red decreases
+      image[:, col, 2] = ...               # Blue increases (what goes here?)
 
 .. dropdown:: Complete Solution
-   
+
    .. code-block:: python
-      :caption: Red-to-blue horizontal gradient
       :linenos:
-      :emphasize-lines: 10-12
-      
-      import numpy as np
-      from PIL import Image
+      :emphasize-lines: 5-7
 
-      # Create image
-      height, width = 200, 200
-      image = np.zeros((height, width, 3), dtype=np.uint8)
-
-      # Create gradient from red (left) to blue (right)
       for col in range(width):
-          image[:, col, 0] = 255 - (col * 255 // width)  # Red decreases
-          image[:, col, 2] = col * 255 // width          # Blue increases
-          # Green channel stays 0
+          # How far across the image (0 at left, 255 at right)
+          proportion = col * 255 // width
 
-      # Convert to PIL and display
-      pil_image = Image.fromarray(image)
-      pil_image.show() 
-      pil_image.save('red_to_blue_gradient.png') 
-   
+          image[:, col, 0] = 255 - proportion  # Red decreases
+          image[:, col, 2] = proportion         # Blue increases
+          # Green stays 0
+
+   .. figure:: visuals/gradient_column_by_column.gif
+      :width: 700px
+      :align: center
+      :alt: Animated diagram showing gradient built column by column
+
+      The loop builds the gradient one column at a time. *Diagram generated with Claude - Opus 4.5*
+
    **How it works:**
-   
-   * `col * 255 // width` calculates a proportion: when `col=0` (left edge), value is 0; when `col=width-1` (right edge), value is ~255
-   * Red channel: `255 - proportion` starts at 255 (left) and decreases to 0 (right)
-   * Blue channel: `proportion` starts at 0 (left) and increases to 255 (right)
+
+   * ``col * 255 // width`` calculates a proportion: when ``col=0`` (left edge), value is 0; when ``col=width-1`` (right edge), value is ~255
+   * Red channel: ``255 - proportion`` starts at 255 (left) and decreases to 0 (right)
+   * Blue channel: ``proportion`` starts at 0 (left) and increases to 255 (right)
    * The result is a smooth transition through purples in the middle where red and blue overlap
-   
-   **Challenge extension:** Try creating a **vertical** gradient, or a gradient from yellow to cyan!
+
+**Make It Your Own**
+
+After completing the TODOs, try these variations by editing the script directly:
+
+* Change ``height`` and ``width`` to different values
+* Create a **vertical** gradient by looping over rows instead of columns
+* Create a **yellow-to-cyan** gradient (which channels need to change?)
+* Create a **diagonal** gradient using both row and column position
 
 .. dropdown:: Challenge Extension: Diagonal Gradient
 
@@ -382,17 +417,8 @@ Now create something from scratch: a horizontal color gradient that transitions 
 
    This extends the horizontal gradient by requiring you to think in two dimensions simultaneously.
 
-.. figure:: /images/gradient_example.png
-   :width: 400px
-   :align: center
-   :alt: Example red-to-blue gradient output
-   
-   Expected output: smooth gradient from red to blue
-
 Summary
 =======
-
-In just 15-20 minutes, we've covered 3 of the core concepts of digital image representation: grayscale, RGB, and array indexing.
 
 **Key takeaways:**
 
