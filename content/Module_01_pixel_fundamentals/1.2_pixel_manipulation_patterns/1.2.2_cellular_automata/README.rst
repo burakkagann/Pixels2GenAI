@@ -18,13 +18,13 @@ By completing this exercise, you will:
 * Understand how cellular automata generate dynamic patterns from simple rules
 * Practice Conway's Game of Life rules and their implementation
 * Learn neighbor calculation techniques using convolution
-* Explore simple but emergent behavior in your computer
+* Watch patterns move, blink, and persist without ever programming those behaviors
 * Create evolving visual patterns that change over time
 
 Quick Start: See Life In Action
 ===============================
 
-Let's begin by creating a simple cellular automaton:
+Five cells on a 20x20 grid. Eight frames later, they have walked diagonally without any movement logic:
 
 .. code-block:: python
    :caption: Create Conway's Game of Life glider animation
@@ -39,37 +39,49 @@ Let's begin by creating a simple cellular automaton:
        """Convert binary grid to grayscale image."""
        return np.repeat(np.repeat(grid * 255, scale, axis=0), scale, axis=1).astype(np.uint8)
 
-   # Initialize 20x20 grid with glider pattern
    grid = np.zeros((20, 20), dtype=int)
-   grid[8:11, 8:11] = [[0, 1, 0], [0, 0, 1], [1, 1, 1]]
+   grid[8:11, 8:11] = [[0, 1, 0], [0, 0, 1], [1, 1, 1]]  # Glider
 
-   # Generate 8 frames of glider movement
+   # Moore neighborhood kernel (counts 8 surrounding cells, excludes center)
+   kernel = np.array([[1, 1, 1],
+                      [1, 0, 1],
+                      [1, 1, 1]])
+
    frames = []
-
-   # Moore neighborhood kernel: counts all 8 surrounding cells
-   # The center (0) is excluded - we don't count the cell itself
-   kernel = np.array([[1, 1, 1],   # top-left, top, top-right
-                      [1, 0, 1],   # left, [cell], right
-                      [1, 1, 1]])  # bottom-left, bottom, bottom-right
-
    for step in range(8):
        frames.append(grid_to_image(grid))
-
-       # Count neighbors for every cell simultaneously
        neighbor_count = convolve(grid, kernel, mode='wrap')
-
-       # Apply Conway's Game of Life rules (B3/S23):
-       # BIRTH: Dead cell with exactly 3 neighbors becomes alive
-       # SURVIVAL: Living cell with 2 or 3 neighbors stays alive
-       # DEATH: All other cells die (isolation: <2, overcrowding: >3)
+       # Apply B3/S23 rules
        birth = (neighbor_count == 3)
        survival = (grid == 1) & (neighbor_count == 2)
        grid = (birth | survival).astype(int)
 
-   # Save as animated GIF
    imageio.mimsave('glider_animation.gif', frames, fps=2, duration=0.5)
 
-.. figure:: glider_animation.gif
+.. dropdown:: Key Functions Used Above
+
+   **NumPy:** ``np.zeros(shape, dtype)``
+      Creates an array filled with zeros.
+      ``np.zeros((20, 20), dtype=int)`` makes a 20x20 grid where every cell starts dead.
+
+   **NumPy:** ``np.repeat(array, repeats, axis)``
+      Repeats each element of an array a specified number of times along the given axis.
+      Here we use it to upscale each grid cell into a visible block of pixels --
+      ``np.repeat(grid, 8, axis=0)`` turns each row into 8 identical rows,
+      making a 20x20 grid become 160x160 pixels.
+
+   **SciPy:** ``convolve(input, weights, mode)``
+      Slides a small matrix (kernel) across every position in the input,
+      computing a weighted sum at each location [SciPyDocs]_.
+      With our 3x3 kernel of ones (center 0), it counts each cell's 8 neighbors in one call.
+      ``mode='wrap'`` connects opposite edges so the grid behaves as a torus.
+
+   **NumPy:** ``np.stack(arrays, axis)``
+      Joins a sequence of arrays along a new axis.
+      In Exercise 1 below, ``np.stack([gray, gray, gray], axis=2)``
+      creates an RGB image from a grayscale grid with shape ``(H, W, 3)``.
+
+.. figure:: visuals/glider_animation.gif
    :width: 400px
    :align: center
    :alt: Game of Life patterns including glider, block, and beehive
@@ -86,7 +98,7 @@ Core Concepts
 Core Concept 1: Cellular Automata Fundamentals
 ----------------------------------------------
 
-A **cellular automaton** consists of three essential components [Wolfram2002]_:
+Start with a grid of cells, each alive or dead. Define a rule that counts neighbors and decides the next state. Step forward, updating every cell at once. This loop of grid, rules, and synchronous update defines a **cellular automaton** [Wolfram2002]_:
 
 1. **Grid**: A regular array of cells, each in one of several states
 2. **Rules**: Mathematical conditions that determine state changes
@@ -100,11 +112,18 @@ A **cellular automaton** consists of three essential components [Wolfram2002]_:
    for generation in range(num_steps):
        grid = apply_rules(grid)  # All cells update together
 
-This simple framework can generate remarkably diverse behaviors [Wolfram2002]_, from stable patterns to moving structures to chaotic dynamics.
+This framework generates four qualitatively different dynamics [Wolfram2002]_: static equilibria, periodic cycles, traveling structures, and unbounded chaotic transients.
 
 .. important::
 
    The key insight is **simultaneity**. All cells update at the same time based on the current state, not the partially updated state. This creates predictable, deterministic evolution [Wolfram2002]_.
+
+.. figure:: visuals/simultaneous_update.gif
+   :width: 700px
+   :align: center
+   :alt: Animation showing simultaneous update where all cells read from current generation and write to next generation
+
+   Simultaneous update: all cells compute from the same source state, then the grid updates at once. *Diagram generated with Claude - Opus 4.5*
 
 Conway's Game of Life Rules (B3/S23)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -133,10 +152,17 @@ These rules create three categories of patterns [Adamatzky2010]_:
 
    John Conway designed these rules in 1970 [Gardner1970]_ to simplify John von Neumann's 29-state cellular automaton [VonNeumann1966]_. Conway wanted a system where interesting behavior would emerge but not grow indefinitely. The formal treatment of these rules appears in *Winning Ways for Your Mathematical Plays* [BerlekampConwayGuy2004]_, co-authored by Conway himself.
 
+.. figure:: visuals/rule_evaluation.gif
+   :width: 700px
+   :align: center
+   :alt: Animated demonstration of B3/S23 rule evaluation showing birth, survival, and death cases
+
+   B3/S23 rule evaluation: count alive neighbors, then apply birth, survival, or death rule. *Diagram generated with Claude - Opus 4.5*
+
 Core Concept 2: Pattern Classification in Game of Life
 -------------------------------------------------------
 
-Conway's simple rules create three fundamental categories of patterns [Adamatzky2010]_, each with distinct behaviors that you can learn to recognize:
+Each category has recognizable signatures [Adamatzky2010]_. Here is what to look for:
 
 **Still Lifes: Stable Forever**
 
@@ -166,9 +192,9 @@ These patterns repeat in cycles. The **blinker** alternates every generation:
    . ■ ■ ■ .   →    . . ■ . .   →    . ■ ■ ■ .
    . . . . .        . . ■ . .        . . . . .
 
-The horizontal line becomes vertical, then back to horizontal — a **period-2 oscillator** [LifeWiki]_.
+The horizontal line becomes vertical, then back to horizontal, forming a **period-2 oscillator** [LifeWiki]_.
 
-.. figure:: blinker_oscillator_theory.gif
+.. figure:: visuals/blinker_oscillator_theory.gif
    :width: 250px
    :align: center
    :alt: Blinker oscillator animation showing horizontal to vertical oscillation
@@ -186,7 +212,7 @@ The **beacon oscillator** is more complex, alternating between 6 and 8 living ce
    . . . ■          . . ■ ■          . . . ■
    . . ■ ■          . . ■ ■          . . ■ ■
 
-.. figure:: beacon_oscillator_theory.gif
+.. figure:: visuals/beacon_oscillator_theory.gif
    :width: 300px
    :align: center
    :alt: Beacon Oscillator animation displaying alternation between 6 & 8 cells.
@@ -196,7 +222,7 @@ The **beacon oscillator** is more complex, alternating between 6 and 8 living ce
 
 **Spaceships: Moving Patterns**
 
-These patterns maintain their shape while traveling across the grid. The **glider** moves diagonally:
+Unlike oscillators, which transform in place, spaceships reconstruct themselves at a new grid position each cycle. The **glider** moves diagonally:
 
 .. code-block:: text
 
@@ -209,7 +235,7 @@ These patterns maintain their shape while traveling across the grid. The **glide
 
 The glider recreates itself one position down and to the right every 4 generations [Gardner1970]_, creating the illusion of movement. Interestingly, the glider was discovered by Richard K. Guy in 1969 while tracking the R-pentomino evolution [Roberts2015]_.
 
-.. figure:: spaceship_theory.gif
+.. figure:: visuals/spaceship_theory.gif
    :width: 300px
    :align: center
    :alt: Glider spaceship animation showing diagonal movement
@@ -218,10 +244,17 @@ The glider recreates itself one position down and to the right every 4 generatio
 
 .. important::
 
-   **Pattern Recognition Tip**: Look at the neighbor counts! Still lifes have perfect balance, oscillators have unstable spots that flip-flop, and spaceships have asymmetric neighbor distributions that "push" them forward.
+   **Pattern Recognition Tip**: Look at the neighbor counts. Still lifes have balanced counts: every living cell has exactly 2 or 3 neighbors, every dead cell has fewer than 3. Oscillators? Unstable boundary cells that alternate between birth and death. Spaceships are subtler: asymmetric neighbor distributions create a directional "lean" that shifts the pattern each cycle.
 
 Understanding the Beacon Oscillator
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. figure:: visuals/beacon_oscillator_theory.gif
+   :width: 300px
+   :align: center
+   :alt: Beacon oscillator animation showing compact and expanded forms
+
+   Beacon oscillator demonstrating 6→8→6→8 cell cycle over 4 generations
 
 **The Beacon's Two States:**
 
@@ -233,13 +266,6 @@ Understanding the Beacon Oscillator
 - The middle cells are born because they suddenly have exactly 3 neighbors
 - This happens when the corner blocks "reach toward" each other
 
-.. figure:: beacon_oscillator_theory.gif
-   :width: 300px
-   :align: center
-   :alt: Beacon oscillator animation showing compact and expanded forms
-
-   Beacon oscillator demonstrating 6→8→6→8 cell cycle over 4 generations
-
 **Why It Oscillates:**
 
 1. **Generation 0** (compact): Corner cells are stable, middle positions have exactly 3 neighbors → birth
@@ -248,10 +274,47 @@ Understanding the Beacon Oscillator
 
 This predictable 6→8→6→8 pattern makes the beacon perfect for demonstrating how Game of Life rules create rhythmic, observable changes.
 
+Placing Patterns in Code
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Every Game of Life pattern is a small 2D shape that you place onto the grid using array slicing.
+The technique: read the visual pattern **row by row**, converting filled cells (alive) to ``1`` and
+empty cells (dead) to ``0``, then assign the result to a grid region:
+
+.. code-block:: python
+
+   # Horizontal blinker (1 row x 3 columns):
+   # ■ ■ ■
+   grid[10, 5:8] = [1, 1, 1]
+
+   # Vertical blinker (3 rows x 1 column):
+   # ■
+   # ■
+   # ■
+   grid[10:13, 5] = [1, 1, 1]
+
+   # Glider (3 rows x 3 columns) -- read row by row:
+   # . ■ .     →  [0, 1, 0]
+   # . . ■     →  [0, 0, 1]
+   # ■ ■ ■     →  [1, 1, 1]
+   grid[10:13, 5:8] = [[0, 1, 0], [0, 0, 1], [1, 1, 1]]
+
+The slice ``grid[row:row+height, col:col+width]`` selects the rectangle where the pattern
+is placed. To **rotate** a pattern, rearrange the rows. For example, a glider heading the
+opposite direction (up-left instead of down-right):
+
+.. code-block:: python
+
+   # Glider rotated 180 degrees:
+   # ■ ■ ■     →  [1, 1, 1]
+   # ■ . .     →  [1, 0, 0]
+   # . ■ .     →  [0, 1, 0]
+   grid[10:13, 5:8] = [[1, 1, 1], [1, 0, 0], [0, 1, 0]]
+
 Core Concept 3: Neighbor Calculation with Convolution
 ------------------------------------------------------
 
-The most efficient way to count neighbors uses **2D convolution** [SciPyDocs]_ with a kernel that represents the Moore neighborhood:
+A standard approach to neighbor counting uses **2D convolution** [SciPyDocs]_ with a kernel shaped like the Moore neighborhood:
 
 .. code-block:: python
 
@@ -265,7 +328,7 @@ The most efficient way to count neighbors uses **2D convolution** [SciPyDocs]_ w
 
 This approach calculates all neighbor counts in parallel, making the algorithm much faster than nested loops. The `mode='wrap'` creates **toroidal boundary conditions** [Wolfram2002]_ where the edges connect to the opposite sides.
 
-.. figure:: moore_neighborhood_theory.png
+.. figure:: visuals/moore_neighborhood_theory.png
    :width: 600px
    :align: center
    :alt: Moore neighborhood diagram showing 8 neighbors and convolution kernel
@@ -292,7 +355,7 @@ How you handle grid edges dramatically affects pattern behavior [Flake1998]_:
 
 For artistic applications, wrap-around often produces more visually interesting results [Flake1998]_ because patterns can interact across the entire space.
 
-.. figure:: boundary_conditions_theory.gif
+.. figure:: visuals/boundary_conditions_theory.gif
    :width: 600px
    :align: center
    :alt: Boundary conditions comparison showing wrap-around vs fixed edges
@@ -304,47 +367,26 @@ Hands-On Exercises
 
 Now it is time to apply what you've learned with three progressively challenging exercises. Each builds on the previous one using the **Execute → Modify → Create** approach [Sweller1985]_, [Mayer2020]_.
 
-These exercises reinforce the core concepts:
-
-* **Exercise 1 (Execute)**: Practice pattern recognition (Core Concept 2)
-* **Exercise 2 (Modify)**: Explore boundary conditions and convolution (Core Concepts 3-4)
-* **Exercise 3 (Create)**: Apply B3/S23 rules to build a complex oscillator (Core Concepts 1-2)
-
 Exercise 1: Execute and explore
 ---------------------------------
 
-Now that you understand what oscillators are, let's start with the simplest example: the **blinker**. Run the following code to see this period-2 oscillator flip between horizontal and vertical orientations.
+The **blinker** is the simplest oscillator: three cells, period 2. Run the script below to watch it flip between horizontal and vertical orientations.
 
-.. code-block:: python
-   :caption: Exercise 1 — Simple blinker oscillator
-   :linenos:
+.. code-block:: bash
 
-   import numpy as np
-   from PIL import Image
-   from scipy.ndimage import convolve
+   python exercise1_execute.py
 
-   def grid_to_image(grid, scale=10):
-       """Convert binary grid to RGB image."""
-       gray = np.repeat(np.repeat(grid * 255, scale, axis=0), scale, axis=1)
-       return np.stack([gray, gray, gray], axis=2).astype(np.uint8)
+.. tip:: **NumPy Function:** ``np.sum(array)``
 
-   def game_of_life_step(grid):
-       """Apply one generation of Conway's Game of Life."""
-       kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])
-       neighbor_count = convolve(grid, kernel, mode='wrap')
-       return ((neighbor_count == 3) | ((grid == 1) & (neighbor_count == 2))).astype(int)
+   Returns the sum of all elements in the array. Since living cells are 1
+   and dead cells are 0, ``np.sum(grid)`` counts the total living cells.
 
-   # Initialize with blinker pattern (horizontal line of 3 cells)
-   grid = np.zeros((30, 30), dtype=int)
-   grid[15, 14:17] = [1, 1, 1]  # Horizontal blinker in center
+.. figure:: visuals/expected_exercise1.png
+   :width: 300px
+   :align: center
+   :alt: Blinker oscillator after 6 generations, vertical line of 3 white cells
 
-   # Evolve for 6 generations to see complete cycles
-   for generation in range(6):
-       grid = game_of_life_step(grid)
-       print(f"Generation {generation + 1}: {np.sum(grid)} living cells")
-
-   # Save final state
-   Image.fromarray(grid_to_image(grid)).save('exercise1_result.png')
+   Expected output: the blinker after 6 (even) generations returns to its original horizontal form
 
 **Reflection questions:**
 
@@ -357,174 +399,190 @@ Now that you understand what oscillators are, let's start with the simplest exam
    **What happened:**
 
    1. The blinker maintains exactly 3 living cells throughout all generations
-   2. Generation 1, 3, 5... = horizontal line (3 cells in a row)
-   3. Generation 2, 4, 6... = vertical line (3 cells in a column)
+   2. Generation 1, 3, 5... = vertical line (3 cells in a column)
+   3. Generation 2, 4, 6... = horizontal line (3 cells in a row)
    4. The pattern repeats every 2 generations (period-2 oscillator)
 
    **Key insights:**
-   * This is a **period-2 oscillator** - it repeats every 2 generations
+
+   * This is a **period-2 oscillator** that repeats every 2 generations
    * The cell count stays constant (always 3), but the *shape* changes
-   * The horizontal configuration has each cell with exactly 2 neighbors → survive
-   * The end cells die (only 1 neighbor each), middle cell births 2 new cells above/below
+   * The end cells die (only 1 neighbor each), while the middle cell births 2 new cells above/below
    * Unlike still lifes (never change) or spaceships (move), oscillators transform but stay in place
 
 Exercise 2: Modify blinker variations
 --------------------------------------
 
-Modify the code from Exercise 1 to explore different blinker configurations and boundary conditions.
+Open ``exercise2_modify.py`` in your editor. The script starts with a blinker at the center of a 30x30 grid. Your job is to change the marked values to achieve each goal below. After each change, re-run the script to see the result.
+
+.. code-block:: bash
+
+   python exercise2_modify.py
 
 **Goals:**
 
-1. **Try different positions**: Place the blinker near the edge of the grid
-2. **Change boundaries**: Use fixed edges instead of wrap-around to see edge effects
-3. **Multiple blinkers**: Start with several blinkers in different locations
+1. **Move to the very top edge**: Change the blinker position to row 0. Does it still oscillate?
+2. **Switch boundary mode**: Keep the edge blinker and change ``mode='wrap'`` to ``mode='constant'``. What happens?
+3. **Multiple blinkers**: Add several blinkers at different positions and orientations
 
-.. dropdown:: Hints
+.. figure:: visuals/expected_exercise2_goals.png
+   :width: 600px
+   :align: center
+   :alt: Three panels showing edge blinker with wrap, edge blinker with fixed boundary (empty), and multiple blinkers
 
-   * Edge blinker: `grid[1, 14:17] = [1, 1, 1]` (place near top edge)
-   * Fixed boundaries: Change `mode='wrap'` to `mode='constant'` in the convolve function
-   * Multiple blinkers: Add several lines like `grid[10, 5:8] = [1, 1, 1]` and `grid[20, 15:18] = [1, 1, 1]`
+   Target outputs. Compare your results to these after each goal
+
+.. dropdown:: Goal 1: What to expect
+
+   Change the pattern placement line to ``grid[0, 14:17] = [1, 1, 1]``. With wrap-around boundaries, the blinker oscillates normally even at the very top edge because the grid wraps: cells above row 0 "connect" to the bottom rows. The blinker survives.
+
+.. dropdown:: Goal 2: What to expect
+
+   Keep the blinker at row 0 and change the boundary mode to ``mode='constant'`` inside the ``game_of_life_step`` function. With fixed boundaries, cells beyond the edge are treated as permanently dead. The edge blinker loses neighbors it needs to survive and **dies within 2 generations**. The grid goes completely empty! This dramatically shows how boundary conditions affect pattern survival.
+
+.. dropdown:: Goal 3: What to expect
+
+   Add multiple blinker lines. Each blinker oscillates independently as long as they are far enough apart. Try mixing horizontal and vertical blinkers to see both orientations.
+
+   **Experiment -- what happens when blinkers overlap?** Place two horizontal blinkers just 2 rows apart (e.g., rows 14 and 16). 
 
 .. dropdown:: Solutions
 
-   **1. Edge blinker:**
+   **1. Edge blinker (row 0):**
 
    .. code-block:: python
 
-      # Replace center blinker with edge placement:
-      grid[1, 14:17] = [1, 1, 1]  # Near top edge
-      # With wrap-around, works normally; with fixed boundaries, may behave differently
+      grid[0, 14:17] = [1, 1, 1]  # At the very top edge
 
    **2. Fixed boundaries:**
 
    .. code-block:: python
 
-      # In the game_of_life_step function:
-      neighbor_count = convolve(grid, kernel, mode='constant')
-      # Edge blinkers may die because they lack sufficient neighbors at boundaries
+      # In the game_of_life_step function, change:
+      neighbor_count = convolve(grid, kernel, mode='constant')  # Fixed edges
+      # Combined with edge placement, the blinker dies!
 
    **3. Multiple blinkers:**
 
    .. code-block:: python
 
-      # Add multiple blinkers in different orientations:
-      grid[10, 5:8] = [1, 1, 1]      # Horizontal blinker
-      grid[20:23, 15] = [1, 1, 1]    # Vertical blinker
-      grid[15, 20:23] = [1, 1, 1]    # Another horizontal blinker
-      # All blinkers oscillate independently
+      grid[8, 5:8] = [1, 1, 1]       # Horizontal blinker
+      grid[14:17, 15] = [1, 1, 1]    # Vertical blinker
+      grid[22, 20:23] = [1, 1, 1]    # Another horizontal blinker
 
-Exercise 3: Re-code with complex oscillator
---------------------------------------------
+Exercise 3: Create a pattern garden
+-------------------------------------
 
+Open ``exercise3_create.py`` in your editor. The helper functions and grid setup are provided. Complete the three TODOs to place multiple patterns on the grid and bring the garden to life.
 
-Now that you understand simple oscillators (blinker), create a more advanced oscillator: the **beacon**. This pattern shows varying cell counts and more complex behavior.
+.. code-block:: bash
 
-**Beacon Pattern:**
-* Alternates between 6 and 8 living cells
-* Has two distinct visual forms: compact and expanded
-* Period-2 oscillator like the blinker, but with changing cell counts
+   python exercise3_create.py
 
-**Requirements:**
-* Use a 30×30 grid like Exercise 1
-* Initialize the beacon pattern correctly
-* Run for 10 generations to see cell count changes
-* Save the final state as 'exercise3_result.png'
+.. dropdown:: Hint 1: Review the pattern shapes
 
-.. code-block:: python
-   :caption: Exercise 3 starter code
+   Look back at Core Concept 2 above. The beacon's bottom-right block mirrors the top-left block:
 
-   import numpy as np
-   from PIL import Image
-   from scipy.ndimage import convolve
+   * Top-left: ``[[1, 1], [1, 0]]``, which is the full top row, left cell on bottom
+   * Bottom-right: think of it as the opposite. What fills the bottom row and the right cell on top?
 
-   def grid_to_image(grid, scale=10):
-       """Convert binary grid to RGB image."""
-       gray = np.repeat(np.repeat(grid * 255, scale, axis=0), scale, axis=1)
-       return np.stack([gray, gray, gray], axis=2).astype(np.uint8)
+   For the glider, read the visual pattern row by row, converting filled squares to 1 and empty to 0.
 
-   def game_of_life_step(grid):
-       """Apply one generation of Conway's Game of Life."""
-       kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])
-       neighbor_count = convolve(grid, kernel, mode='wrap')
-       return ((neighbor_count == 3) | ((grid == 1) & (neighbor_count == 2))).astype(int)
+.. dropdown:: Hint 2: Array indexing for 2D patterns
 
-   # Initialize with beacon oscillator pattern
-   grid = np.zeros((30, 30), dtype=int)
+   A 2D list like ``[[0, 1], [1, 1]]`` assigns values row-by-row into a grid slice.
+   ``grid[7:9, 7:9]`` means rows 7 and 8, columns 7 and 8 (a 2x2 region).
+   ``grid[20:23, 10:13]`` means rows 20-22, columns 10-12 (a 3x3 region).
 
-   # Your code here:
-   # 1. Create the beacon pattern using two 2x2 blocks with a gap
-   # 2. Hint: grid[13:15, 13:15] = [[1, 1], [1, 0]] for top-left block
-   # 3. Hint: grid[15:17, 15:17] = [[0, 1], [1, 1]] for bottom-right block
+.. dropdown:: Hint 3: Partial code
 
-   # Your evolution loop here:
-   # Run for 10 generations and print cell counts each generation
+   .. code-block:: python
+
+      # TODO 1: Bottom-right block of beacon
+      grid[7:9, 7:9] = [[0, 1], [1, 1]]
+
+      # TODO 2: Glider (first row is done, complete the rest)
+      grid[20:23, 10:13] = [[0, 1, 0], ...]  # What are rows 2 and 3?
+
+      # TODO 3: The loop body
+      for generation in range(20):
+          grid = game_of_life_step(grid)
+          print(...)  # Print generation number and np.sum(grid)
 
 .. dropdown:: Complete Solution
 
    .. code-block:: python
-      :caption: Beacon oscillator cellular automaton
       :linenos:
-      :emphasize-lines: 18-20
+      :emphasize-lines: 5-6, 12, 17-18
 
-      import numpy as np
-      from PIL import Image
-      from scipy.ndimage import convolve
+      # TODO 1: Beacon bottom-right block
+      grid[5:7, 5:7] = [[1, 1], [1, 0]]    # Top-left block (provided)
+      grid[7:9, 7:9] = [[0, 1], [1, 1]]    # Bottom-right block
 
-      def grid_to_image(grid, scale=10):
-          """Convert binary grid to RGB image."""
-          gray = np.repeat(np.repeat(grid * 255, scale, axis=0), scale, axis=1)
-          return np.stack([gray, gray, gray], axis=2).astype(np.uint8)
+      # TODO 2: Glider spaceship
+      grid[20:23, 10:13] = [[0, 1, 0], [0, 0, 1], [1, 1, 1]]
 
-      def game_of_life_step(grid):
-          """Apply one generation of Conway's Game of Life."""
-          kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]])
-          neighbor_count = convolve(grid, kernel, mode='wrap')
-          return ((neighbor_count == 3) | ((grid == 1) & (neighbor_count == 2))).astype(int)
-
-      # Initialize with beacon oscillator pattern
-      grid = np.zeros((30, 30), dtype=int)
-      grid[13:15, 13:15] = [[1, 1], [1, 0]]  # Top-left block
-      grid[15:17, 15:17] = [[0, 1], [1, 1]]  # Bottom-right block
-
-      # Evolve for 10 generations and track cell counts
-      for generation in range(10):
+      # TODO 3: Evolution loop
+      for generation in range(20):
           grid = game_of_life_step(grid)
           print(f"Generation {generation + 1}: {np.sum(grid)} living cells")
 
-      # Save result using helper function
-      Image.fromarray(grid_to_image(grid)).save('exercise3_result.png')
-      print("Beacon oscillator evolution completed!")
+   **Expected output:**
+
+   .. figure:: visuals/expected_exercise3.png
+      :width: 320px
+      :align: center
+      :alt: Pattern garden showing beacon oscillator and glider after 20 generations
+
+      Your result should look like this. The beacon stays in place while the glider moves diagonally
 
    **How it works:**
 
-   * Lines 18-20: Creates the beacon pattern with two offset 2x2 blocks that interact
-   * The beacon alternates between 6 cells (compact) and 8 cells (expanded) every generation
-   * Unlike the simple blinker (constant 3 cells), the beacon shows varying cell counts
-   * This demonstrates how more complex oscillators can have both shape AND population changes
+   * The beacon oscillates between 6 and 8 cells, staying at position (5, 5)
+   * The glider moves diagonally across the grid, traveling 5 cells in 20 generations
+   * Both patterns coexist independently because they are far enough apart
+   * This demonstrates how different pattern types (oscillator + spaceship) can share the same grid
 
-   **Challenge extension:** Try creating a "toad" oscillator with 6 cells in a different arrangement!
+**Make It Your Own**
+
+After completing the TODOs, try these variations by editing the script directly:
+
+* Add a blinker: ``grid[row, col:col+3] = [1, 1, 1]``
+* Add a block (still life): ``grid[row:row+2, col:col+2] = 1``
+* Place two gliders on a collision course. What happens when they meet?
+* Increase the grid to 60x60 and scatter more patterns across it
+
+.. dropdown:: Challenge Extension: Glider Collision
+
+   Place two gliders heading toward each other:
+
+   .. code-block:: python
+
+      # Glider moving down-right
+      grid[5:8, 5:8] = [[0, 1, 0], [0, 0, 1], [1, 1, 1]]
+
+      # Glider moving up-left (rotated 180 degrees)
+      grid[30:33, 30:33] = [[1, 1, 1], [1, 0, 0], [0, 1, 0]]
+
+   Run for 50+ generations and watch what the collision produces. The result depends on exactly when and where they meet. Sometimes they annihilate, sometimes they create new stable patterns!
 
 Summary
 =======
 
-In this exercise, you learned fundamental techniques for creating evolving patterns with cellular automata:
+Four rules, applied uniformly, generate structures that were never programmed: gliders that walk, beacons that blink, blocks that simply persist.
 
 **Key takeaways:**
 
-* **Simple rules create diverse behavior** [Wolfram2002]_ — Conway's four rules generate remarkable pattern diversity
+* **Simple rules, complex outcomes** [Wolfram2002]_: Conway's four rules produce still lifes, oscillators, spaceships, and chaotic transients from one mechanism
 * **Convolution enables efficient computation** - neighbor counting scales to large grids
 * **Boundary conditions affect evolution** - wrap-around vs fixed edges change pattern dynamics
-* **Emergent properties arise** - movement, oscillation, and stability emerge from local interactions
-* **Rule variations create different behaviors** - small changes (like HighLife) produce dramatically different results
+* **No behavior was programmed** - movement, oscillation, and stability all follow from local neighbor counting alone
+* **Rule variations reshape everything** - changing B3/S23 to B36/S23 adds a single birth condition, yet the dynamics shift from controlled patterns to explosive growth
 
 References
 ==========
 
-**Primary Sources**
-
 .. [Gardner1970] Gardner, Martin. "Mathematical Games: The fantastic combinations of John Conway's new solitaire game 'life'." *Scientific American*, vol. 223, no. 4, 1970, pp. 120-123. [Original publication introducing Game of Life to the public]
-
-**Foundational Texts**
 
 .. [Wolfram2002] Wolfram, Stephen. *A New Kind of Science*. Wolfram Media, 2002. ISBN: 978-1-57955-008-0. [Comprehensive exploration of cellular automata and computational irreducibility]
 
@@ -538,17 +596,11 @@ References
 
 .. [VonNeumann1966] Von Neumann, J. (1966). *Theory of self-reproducing automata* (A. W. Burks, Ed.). University of Illinois Press. [Conway designed GoL to simplify von Neumann's 29-state cellular automaton]
 
-**Technical Documentation**
-
-.. [SciPyDocs] SciPy Developers. (2024). scipy.ndimage.convolve — N-dimensional convolution. *SciPy v1.12.0 Documentation*. https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.convolve.html
+.. [SciPyDocs] SciPy Developers. (2024). scipy.ndimage.convolve: N-dimensional convolution. *SciPy v1.12.0 Documentation*. https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.convolve.html
 
 .. [NumPyDocs] NumPy Developers. (2024). NumPy array manipulation routines. *NumPy v1.26 Documentation*. https://numpy.org/doc/stable/reference/routines.array-manipulation.html
 
-**Pattern References**
-
-.. [LifeWiki] ConwayLife.com. (2024). LifeWiki — The wiki for Conway's Game of Life. https://conwaylife.com/wiki/Main_Page [Comprehensive database of patterns including block, blinker, beacon, and glider]
-
-**Pedagogical References**
+.. [LifeWiki] ConwayLife.com. (2024). LifeWiki: The wiki for Conway's Game of Life. https://conwaylife.com/wiki/Main_Page [Comprehensive database of patterns including block, blinker, beacon, and glider]
 
 .. [Sweller1985] Sweller, J. (1985). Cognitive load during problem solving: Effects on learning. *Cognitive Science*, 12(2), 257-285. https://doi.org/10.1207/s15516709cog1202_4 [Foundation of cognitive load theory in instructional design]
 
@@ -558,9 +610,9 @@ References
 
    **Simulators**
 
-   - `Golly <http://golly.sourceforge.net/>`_ — Advanced open-source cellular automata simulator
+   - `Golly <http://golly.sourceforge.net/>`_: Advanced open-source cellular automata simulator
 
    **Educational**
 
-   - `Elementary Cellular Automata <https://mathworld.wolfram.com/ElementaryCellularAutomaton.html>`_ — Wolfram MathWorld's 1D CA reference
-   - `Numberphile: Inventing Game of Life <https://www.youtube.com/watch?v=R9Plq-D1gEk>`_ — John Conway explains his invention (video)
+   - `Elementary Cellular Automata <https://mathworld.wolfram.com/ElementaryCellularAutomaton.html>`_: Wolfram MathWorld's 1D CA reference
+   - `Numberphile: Inventing Game of Life <https://www.youtube.com/watch?v=R9Plq-D1gEk>`_: John Conway explains his invention (video)
