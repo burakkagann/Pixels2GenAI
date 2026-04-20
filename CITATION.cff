@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: "If you use this curriculum or its modules in your work, please cite it as below."
+title: "Pixels2GenAI: A Progressive Creative Coding Curriculum from Computational Foundations to Generative AI"
+abstract: >-
+  Pixels2GenAI is a fifteen-module open-source curriculum that scaffolds learners
+  from NumPy array manipulation through pixel operations, geometry, fractals,
+  simulation, classical machine learning, neural networks, real-time integration,
+  and generative AI models. Modules alternate between two pedagogical formats:
+  Hands-On Discovery (runnable sketch first, theory after) and Conceptual Deep-Dive
+  (formalism first). The curriculum was empirically evaluated in a one-day workshop
+  (n = 9) as part of an MSc thesis at SRH Berlin University of Applied Sciences.
+type: software
+authors:
+  - family-names: "Yilmazer"
+    given-names: "Burak Kağan"
+    affiliation: "SRH Berlin University of Applied Sciences"
+repository-code: "https://github.com/burakkagann/Pixels2GenAI"
+url: "https://burakkagann.github.io/Pixels2GenAI/"
+license: MIT
+keywords:
+  - "creative coding"
+  - "generative AI"
+  - "AI literacy"
+  - "design-based research"
+  - "cognitive load theory"
+  - "computer science education"
+  - "Python"
+  - "NumPy"
+  - "curriculum design"
+date-released: "2026-02-12"
+preferred-citation:
+  type: thesis
+  title: "Bridging Computational Foundations to Generative AI: A Design-Based Framework for Progressive Creative Coding Education"
+  authors:
+    - family-names: "Yilmazer"
+      given-names: "Burak Kağan"
+  thesis-type: "Master's thesis"
+  institution:
+    name: "SRH Berlin University of Applied Sciences"
+  year: 2026
+  month: 3
