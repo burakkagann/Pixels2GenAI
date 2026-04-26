@@ -32,7 +32,7 @@ jobs:
           pip install -r dev_requirements.txt
 
       - name: Build Sphinx HTML
-        run: make html
+        run: sphinx-build -b html . build/html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
