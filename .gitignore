@@ -152,6 +152,10 @@ content/Module_12_generative_ai_models/12.1_generative_adversarial_networks/12.1
 runs/
 checkpoints/
 
+# DDPM archive and test files
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/archive_64x64/
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/my_morph.gif
+
 # DDPM training artifacts (download from GitHub Releases)
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/models/
 
