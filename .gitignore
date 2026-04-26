@@ -124,6 +124,9 @@ project_status.md
 MODULE_COMPLETION_STATUS.md
 _backup/
 
+# Local TODO notes (not for learners)
+TODO_MODEL_DOWNLOAD.md
+
 # Project-specific files
 PROGRESS.md
 .mcp.json
@@ -152,8 +155,18 @@ content/Module_12_generative_ai_models/12.1_generative_adversarial_networks/12.1
 # ML/Deep Learning training artifacts (general patterns)
 *.ckpt
 *.h5
+*.pth
 runs/
 checkpoints/
+
+# DCGAN trained generator (learners train via exercise3 or download from Releases)
+content/Module_12_generative_ai_models/12.1_generative_adversarial_networks/12.1.2_dcgan_art/exercise3_generator.pth
+
+# DreamBooth models (download instructions in README.rst Quick Start)
+content/Module_12_generative_ai_models/12.5_personalization_efficiency/12.5.1_dreambooth_personalization/models/
+
+# Flow Matching models (learners train via exercise3 or download from Releases)
+content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/models/
 
 # DDPM archive and test files
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/archive_64x64/
