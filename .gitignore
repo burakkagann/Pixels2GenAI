@@ -129,6 +129,7 @@ PROGRESS.md
 .mcp.json
 Makefile
 .pylintrc
+requirements_workshop*.txt
 
 # Development scripts and templates (local development only)
 scripts/
