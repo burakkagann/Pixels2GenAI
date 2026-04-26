@@ -12,5 +12,5 @@ To try the algorithm, you need the files:
 -  :download:`mosaic_generator.py`
 -  :download:`patterns.py`
 
-.. |image0| image:: ../../../images/montecarlo.png
+.. |image0| image:: montecarlo.png
 

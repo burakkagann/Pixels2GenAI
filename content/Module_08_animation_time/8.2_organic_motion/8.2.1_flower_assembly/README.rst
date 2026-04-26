@@ -1,7 +1,7 @@
 8.2.1 - Flower Assembly
 ===============
 
-.. figure:: ../../../images/flower_movie.png
+.. figure:: flower_movie.png
    :alt: flower assembly movie frame
 
    flower assembly movie frames

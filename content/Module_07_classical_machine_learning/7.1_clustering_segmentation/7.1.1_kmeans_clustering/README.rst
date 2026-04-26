@@ -5,5 +5,5 @@
 
 .. literalinclude:: decolorize.py
 
-.. |image0| image:: ../../../images/kmeans.png
+.. |image0| image:: kmeans.png
 

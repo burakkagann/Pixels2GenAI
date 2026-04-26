@@ -88,8 +88,8 @@ pip install -r requirements.txt
 
 ```bash
 pip install .[docs]
-make html          # macOS / Linux
-make.bat html      # Windows
+sphinx-build -b html . build/html   # macOS / Linux
+make.bat html                       # Windows
 ```
 
 The built site will be in `build/html/`. Open `build/html/index.html` in a browser to view it.
@@ -105,7 +105,7 @@ Pixels2GenAI/
 ├── index.rst         # Landing page
 ├── pyproject.toml    # Package configuration and dependencies
 ├── requirements.txt  # Pinned runtime dependencies
-└── Makefile          # Documentation build commands
+└── make.bat          # Windows build script
 ```
 
 Each module follows this structure:

@@ -3,7 +3,7 @@
 
 Let’s add some text to an image:
 
-.. figure:: ../../../images/bridge_meme.png
+.. figure:: bridge_meme.png
    :alt: Bridge over Troubled Water
 
    Bridge over Troubled Water

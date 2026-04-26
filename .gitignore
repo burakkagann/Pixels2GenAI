@@ -127,6 +127,11 @@ _backup/
 # Local TODO notes (not for learners)
 TODO_MODEL_DOWNLOAD.md
 
+# Legacy folders (assets relocated to module directories)
+images/
+solutions/
+dev_requirements.txt
+
 # Project-specific files
 PROGRESS.md
 .mcp.json

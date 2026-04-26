@@ -16,5 +16,5 @@ threshold would distort the gate too much.
 
 .. literalinclude:: shadow.py
 
-.. |image0| image:: ../../../images/shadow.png
+.. |image0| image:: shadow.png
 

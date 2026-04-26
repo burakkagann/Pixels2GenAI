@@ -50,7 +50,7 @@ Run this code to see a split image, cyan on top, magenta on the bottom:
    pil_image.show()  # Opens in default image viewer
    pil_image.save('cyan_magenta.png')  # Save as PNG
 
-.. figure:: ../../../../images/cyan_magenta_example.png
+.. figure:: cyan_magenta_example.png
    :width: 300px
    :align: center
    :alt: Example output showing cyan on top, magenta on bottom

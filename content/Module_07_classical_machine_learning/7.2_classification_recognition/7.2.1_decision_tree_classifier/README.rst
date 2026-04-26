@@ -5,5 +5,5 @@
 
 .. literalinclude:: decision_tree.py
 
-.. |image0| image:: ../../../images/decision_tree.png
+.. |image0| image:: decision_tree.png
 

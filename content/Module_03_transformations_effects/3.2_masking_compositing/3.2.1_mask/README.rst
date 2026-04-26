@@ -16,5 +16,5 @@ Challenge
 
 Modify the code to create your own mask shape.
 
-.. |image0| image:: ../../../images/mask.png
+.. |image0| image:: mask.png
 
