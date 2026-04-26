@@ -127,6 +127,8 @@ _backup/
 # Project-specific files
 PROGRESS.md
 .mcp.json
+Makefile
+.pylintrc
 
 # Development scripts and templates (local development only)
 scripts/
@@ -160,22 +162,44 @@ content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/animation_keypoints/
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/generated_samples/
 
-# DDPM training samples NOT referenced in docs (keep only 1,3,5,8,11)
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-2.png
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-4.png
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-6.png
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-7.png
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-9.png
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-10.png
+# DDPM training samples NOT referenced in docs (keep only 1,5,11,20)
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-*.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-1.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-5.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-11.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.1_ddpm_basics/training_results/sample-20.png
+
+# Thesis automation generated reports and logs (local only)
+thesis_automation/reports/
+thesis_automation/logs/
 
 # Claude temporary files
 tmpclaude-*-cwd
 
 # ControlNet training artifacts (Module 12.3.2)
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/fill50k/
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/models/*.pt
-content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/models/*.safetensors
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/models/
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/checkpoint-*/
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/lora_fabrics/*.pt
 content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/checkpoint_comparison/
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/sample_inputs/
+# Windows NUL redirect artifacts (appear when scripts write to NUL on Windows)
+**/nul
 
+# ControlNet unreferenced training samples (keep only those shown in README.rst)
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-*.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-1000.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-3000.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-5000.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-8000.png
+!content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/fill50k/sample-10000.png
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/lora_fabrics/sample_epoch_*.png
+content/Module_12_generative_ai_models/12.3_diffusion_models/12.3.2_controlnet_guided_generation/training_results/lora_fabrics/sample_step_*.png
+
+# Flow Matching training artifacts (Module 12.7.1)
+content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/__pycache__/
+content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/training_results/sample-*.png
+!content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/training_results/sample-1.png
+!content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/training_results/sample-10.png
+!content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/training_results/sample-50.png
+!content/Module_12_generative_ai_models/12.7_modern_frontiers/12.7.1_flow_matching/training_results/sample-99.png
