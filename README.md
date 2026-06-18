@@ -6,7 +6,7 @@
 
 An open-source educational platform that teaches generative art and AI through 15 progressive modules. The curriculum starts with pixel manipulation and NumPy operations, then moves through fractals, simulations, neural networks, and generative models.
 
-**Live site:** https://burakkagann.github.io/Pixels2GenAI/
+**Live site:** [https://pixels2genai.art]
 
 ## Curriculum
 
